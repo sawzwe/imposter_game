@@ -108,15 +108,24 @@ class SupabaseDatabase implements Database {
     try {
       // Dynamic import to avoid bundling in client
       const { createClient } = await import("@supabase/supabase-js");
+      
+      if (!this.supabaseUrl || !this.supabaseKey) {
+        throw new Error("Supabase credentials not configured");
+      }
+      
       return createClient(this.supabaseUrl, this.supabaseKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
         },
+        db: {
+          schema: "public",
+        },
       });
     } catch (error) {
+      console.error("Error creating Supabase client:", error);
       throw new Error(
-        "@supabase/supabase-js not installed. Run: npm install @supabase/supabase-js"
+        error instanceof Error ? error.message : "Failed to create Supabase client"
       );
     }
   }
@@ -141,27 +150,48 @@ class SupabaseDatabase implements Database {
       votes: [],
     };
 
-    const supabase = await this.getClient();
-    const { error } = await supabase.from("game_rooms").insert({
-      id: roomId,
-      data: room,
-      updated_at: new Date().toISOString(),
-    });
+    try {
+      const supabase = await this.getClient();
+      const { error } = await supabase.from("game_rooms").insert({
+        id: roomId,
+        data: room,
+        updated_at: new Date().toISOString(),
+      });
 
-    if (error) throw error;
-    return room;
+      if (error) {
+        console.error("Supabase createRoom error:", error);
+        throw error;
+      }
+      return room;
+    } catch (error) {
+      console.error("Error in createRoom:", error);
+      throw error;
+    }
   }
 
   async getRoom(roomId: string): Promise<GameRoom | null> {
-    const supabase = await this.getClient();
-    const { data, error } = await supabase
-      .from("game_rooms")
-      .select("data")
-      .eq("id", roomId)
-      .single();
+    try {
+      const supabase = await this.getClient();
+      const { data, error } = await supabase
+        .from("game_rooms")
+        .select("data")
+        .eq("id", roomId)
+        .single();
 
-    if (error || !data) return null;
-    return data.data as GameRoom;
+      if (error) {
+        console.error("Supabase getRoom error:", error);
+        return null;
+      }
+
+      if (!data || !data.data) {
+        return null;
+      }
+
+      return data.data as GameRoom;
+    } catch (error) {
+      console.error("Error in getRoom:", error);
+      return null;
+    }
   }
 
   async updateRoom(

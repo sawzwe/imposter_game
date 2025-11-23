@@ -76,16 +76,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log("Fetching room:", roomId);
     const room = await getRoom(roomId);
+    
     if (!room) {
+      console.log("Room not found:", roomId);
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
 
+    console.log("Room found:", room.id);
     return NextResponse.json({ room });
   } catch (error) {
     console.error("Error fetching room:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
