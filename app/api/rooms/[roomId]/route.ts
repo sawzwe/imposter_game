@@ -4,10 +4,11 @@ import { GameRoom, Hero } from "../../../types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
-    const room = await getRoom(params.roomId);
+    const { roomId } = await params;
+    const room = await getRoom(roomId);
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
@@ -23,13 +24,14 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
+    const { roomId } = await params;
     const body = await request.json();
     const { action, playerId, clue, targetPlayerId } = body;
 
-    const room = await getRoom(params.roomId);
+    const room = await getRoom(roomId);
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
@@ -62,7 +64,7 @@ export async function PATCH(
         clue: undefined,
       }));
 
-      const updatedRoom = await updateRoom(params.roomId, {
+      const updatedRoom = await updateRoom(roomId, {
         players: updatedPlayers,
         currentHero: randomHero,
         gameState: "playing",
@@ -94,7 +96,7 @@ export async function PATCH(
 
       const allSubmitted = updatedPlayers.every((p) => p.hasSubmittedClue);
 
-      const updatedRoom = await updateRoom(params.roomId, {
+      const updatedRoom = await updateRoom(roomId, {
         players: updatedPlayers,
         clues: updatedClues,
         gameState: allSubmitted ? "voting" : room.gameState,
@@ -120,7 +122,7 @@ export async function PATCH(
         updatedVotes.some((v) => v.voterId === player.id)
       );
 
-      const updatedRoom = await updateRoom(params.roomId, {
+      const updatedRoom = await updateRoom(roomId, {
         votes: updatedVotes,
         gameState: allVoted ? "finished" : room.gameState,
       });
@@ -129,7 +131,7 @@ export async function PATCH(
     }
 
     if (action === "reset") {
-      const updatedRoom = await updateRoom(params.roomId, {
+      const updatedRoom = await updateRoom(roomId, {
         gameState: "lobby",
         round: 1,
         clues: [],
