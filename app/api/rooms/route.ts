@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRoom, getRoom, addPlayerToRoom } from "../../lib/gameStore";
+import {
+  createRoom,
+  getRoom,
+  addPlayerToRoom,
+  updateRoom,
+} from "../../lib/gameStore";
+
+// Generate a short, user-friendly room code (6 characters, uppercase)
+function generateRoomCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars like 0, O, I, 1
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, roomId, playerId, playerName } = body;
+    const { action, roomId, roomCode, playerId, playerName } = body;
 
     if (action === "create") {
       if (!playerId || !playerName) {
@@ -14,33 +29,56 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const newRoomId = `room_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-      const room = await createRoom(newRoomId, { id: playerId, name: playerName });
-      return NextResponse.json({ room });
+      // Generate short room code
+      const roomCode = generateRoomCode();
+      const newRoomId = `room_${roomCode}`;
+      const room = await createRoom(newRoomId, {
+        id: playerId,
+        name: playerName,
+      });
+      return NextResponse.json({ room, roomCode });
     }
 
     if (action === "join") {
-      if (!roomId || !playerId || !playerName) {
+      if ((!roomId && !roomCode) || !playerId || !playerName) {
         return NextResponse.json(
-          { error: "Room ID, player ID, and name are required" },
+          { error: "Room code/ID, player ID, and name are required" },
           { status: 400 }
         );
       }
 
-      const room = await getRoom(roomId);
+      // Support both roomId and roomCode
+      let actualRoomId = roomId;
+      if (roomCode && !roomId) {
+        actualRoomId = `room_${roomCode.toUpperCase()}`;
+      }
+
+      const room = await getRoom(actualRoomId);
       if (!room) {
         return NextResponse.json({ error: "Room not found" }, { status: 404 });
       }
 
       // Check if player already in room
-      if (room.players.some((p) => p.id === playerId)) {
+      const existingPlayer = room.players.find((p) => p.id === playerId);
+      if (existingPlayer) {
+        // If player exists but name changed, update the name
+        if (existingPlayer.name !== playerName) {
+          const updatedPlayers = room.players.map((p) =>
+            p.id === playerId ? { ...p, name: playerName } : p
+          );
+          const updatedRoom = {
+            ...room,
+            players: updatedPlayers,
+          };
+          // Update room with new name
+          const savedRoom = await updateRoom(actualRoomId, updatedRoom);
+          return NextResponse.json({ room: savedRoom || updatedRoom });
+        }
         return NextResponse.json({ room });
       }
 
       // Add player to room
-      const updatedRoom = await addPlayerToRoom(roomId, {
+      const updatedRoom = await addPlayerToRoom(actualRoomId, {
         id: playerId,
         name: playerName,
       });
@@ -78,7 +116,7 @@ export async function GET(request: NextRequest) {
 
     console.log("Fetching room:", roomId);
     const room = await getRoom(roomId);
-    
+
     if (!room) {
       console.log("Room not found:", roomId);
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
@@ -89,7 +127,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching room:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

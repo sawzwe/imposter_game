@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
@@ -13,10 +13,33 @@ export default function HomeClient() {
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
+  const [roomCode, setRoomCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const joinRoom = async (roomId: string, name?: string) => {
+  // Extract room code from roomId (format: room_XXXXXX)
+  const getRoomCodeFromId = (roomId: string): string => {
+    if (roomId.startsWith("room_")) {
+      return roomId.replace("room_", "");
+    }
+    return roomId;
+  };
+
+  const leaveRoom = useCallback(() => {
+    localStorage.removeItem("roomId");
+    setGameRoom(null);
+    setRoomCode("");
+    setError(null);
+    // Clear URL if it has room parameter
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("room=")
+    ) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  const joinRoom = async (roomIdOrCode: string, name?: string) => {
     const nameToUse = name || playerName.trim();
     if (!nameToUse) {
       setError("Please enter your name");
@@ -32,12 +55,16 @@ export default function HomeClient() {
     setError(null);
 
     try {
+      // Support both room ID and room code
+      const isRoomCode = !roomIdOrCode.startsWith("room_");
       const response = await fetch("/api/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "join",
-          roomId,
+          ...(isRoomCode
+            ? { roomCode: roomIdOrCode.toUpperCase() }
+            : { roomId: roomIdOrCode }),
           playerId,
           playerName: nameToUse,
         }),
@@ -50,6 +77,7 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", nameToUse);
+      localStorage.setItem("roomId", data.room.id);
       setGameRoom(data.room);
     } catch (error: any) {
       console.error("Error joining room:", error);
@@ -72,12 +100,48 @@ export default function HomeClient() {
       localStorage.setItem("playerId", newPlayerId);
     }
 
-    // Check if joining a room from URL
-    if (roomIdFromUrl) {
-      const storedName = localStorage.getItem("playerName");
+    // Restore player name
+    const storedName = localStorage.getItem("playerName");
+    if (storedName) {
+      setPlayerName(storedName);
+    }
+
+    // Try to restore session - check if user was in a room
+    const storedRoomId = localStorage.getItem("roomId");
+    if (storedRoomId && storedName) {
+      // Try to rejoin the room
+      const checkAndRejoin = async () => {
+        const currentPlayerId = localStorage.getItem("playerId");
+        if (currentPlayerId) {
+          try {
+            const response = await fetch(`/api/rooms?roomId=${storedRoomId}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.room) {
+                // Check if player is still in the room
+                const playerInRoom = data.room.players.some(
+                  (p: any) => p.id === currentPlayerId
+                );
+                if (playerInRoom) {
+                  setGameRoom(data.room);
+                } else {
+                  // Player not in room, try to rejoin
+                  await joinRoom(storedRoomId, storedName);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Error restoring session:", error);
+            localStorage.removeItem("roomId");
+          }
+        } else {
+          setTimeout(checkAndRejoin, 100);
+        }
+      };
+      setTimeout(checkAndRejoin, 100);
+    } else if (roomIdFromUrl) {
+      // Check if joining a room from URL
       if (storedName) {
-        setPlayerName(storedName);
-        // Auto-join room after player ID is set
         const checkAndJoin = () => {
           const currentPlayerId = localStorage.getItem("playerId");
           if (currentPlayerId) {
@@ -100,12 +164,25 @@ export default function HomeClient() {
 
     const pollInterval = setInterval(async () => {
       try {
+        // Check if we still have a roomId in localStorage (user hasn't left)
+        const storedRoomId = localStorage.getItem("roomId");
+        if (!storedRoomId || storedRoomId !== gameRoom.id) {
+          clearInterval(pollInterval);
+          return;
+        }
+
         const response = await fetch(`/api/rooms?roomId=${gameRoom.id}`);
         if (response.ok) {
           const data = await response.json();
           if (data.room) {
             setGameRoom(data.room);
+          } else {
+            // Room doesn't exist anymore, clear state
+            leaveRoom();
           }
+        } else if (response.status === 404) {
+          // Room not found, clear state
+          leaveRoom();
         }
       } catch (error) {
         console.error("Error polling room:", error);
@@ -113,7 +190,7 @@ export default function HomeClient() {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [gameRoom?.id]);
+  }, [gameRoom?.id, leaveRoom]);
 
   const createRoom = async () => {
     if (!playerName.trim()) {
@@ -147,6 +224,7 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", playerName.trim());
+      localStorage.setItem("roomId", data.room.id);
       setGameRoom(data.room);
     } catch (error: any) {
       console.error("Error creating room:", error);
@@ -317,7 +395,9 @@ export default function HomeClient() {
                 className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && !isLoading) {
-                    if (roomIdFromUrl) {
+                    if (roomCode.trim()) {
+                      joinRoom(roomCode.trim());
+                    } else if (roomIdFromUrl) {
                       joinRoom(roomIdFromUrl);
                     } else {
                       createRoom();
@@ -328,10 +408,47 @@ export default function HomeClient() {
               />
             </div>
 
+            {!roomIdFromUrl && (
+              <div>
+                <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Room Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) =>
+                    setRoomCode(
+                      e.target.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, "")
+                        .slice(0, 6)
+                    )
+                  }
+                  placeholder="Enter 6-digit code"
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-center text-2xl font-bold tracking-widest text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+                  maxLength={6}
+                  disabled={isLoading}
+                />
+                <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                  Leave empty to create a new room
+                </p>
+              </div>
+            )}
+
             {roomIdFromUrl ? (
               <button
                 onClick={() => joinRoom(roomIdFromUrl)}
                 disabled={isLoading || !playerName.trim()}
+                className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLoading ? "Joining..." : "Join Room"}
+              </button>
+            ) : roomCode.trim() ? (
+              <button
+                onClick={() => joinRoom(roomCode.trim())}
+                disabled={
+                  isLoading || !playerName.trim() || roomCode.length !== 6
+                }
                 className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "Joining..." : "Join Room"}
@@ -359,6 +476,7 @@ export default function HomeClient() {
         playerName={playerName}
         onAddPlayer={addPlayer}
         onStartGame={startGame}
+        onLeaveRoom={leaveRoom}
       />
     );
   }
