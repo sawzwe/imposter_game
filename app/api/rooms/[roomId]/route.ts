@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRoom, updateRoom } from "../../../lib/gameStore";
-import { GameRoom, Hero } from "../../../types";
+import {
+  GameRoom,
+  Hero,
+  ClashRoyaleCard,
+  GameType,
+  GameHint,
+} from "../../../types";
 
 export async function GET(
   request: NextRequest,
@@ -29,7 +35,7 @@ export async function PATCH(
   try {
     const { roomId } = await params;
     const body = await request.json();
-    const { action, playerId, clue, targetPlayerId } = body;
+    const { action, playerId, clue, targetPlayerId, gameType } = body;
 
     const room = await getRoom(roomId);
     if (!room) {
@@ -44,22 +50,102 @@ export async function PATCH(
         );
       }
 
-      // Fetch heroes
-      const heroesResponse = await fetch(
-        `${request.nextUrl.origin}/api/heroes`
-      );
-      const heroesData = await heroesResponse.json();
-      const heroes: Hero[] = heroesData.result.data.heroes;
+      const selectedGameType: GameType = gameType || "dota2";
+      let hints: GameHint[] = [];
+      let randomHero: Hero | undefined;
+      let randomCard: ClashRoyaleCard | undefined;
 
-      // Select random hero
-      const randomHero = heroes[Math.floor(Math.random() * heroes.length)];
+      if (selectedGameType === "dota2") {
+        // Fetch Dota 2 heroes
+        const heroesResponse = await fetch(
+          `${request.nextUrl.origin}/api/heroes`
+        );
+
+        if (!heroesResponse.ok) {
+          throw new Error("Failed to fetch Dota 2 heroes");
+        }
+
+        const heroesData = await heroesResponse.json();
+        const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+
+        if (heroes.length === 0) {
+          throw new Error("No heroes available");
+        }
+
+        // Select random hero
+        randomHero = heroes[Math.floor(Math.random() * heroes.length)];
+
+        // Generate hints for imposter
+        hints = [
+          {
+            type: "Primary Attribute",
+            value:
+              ["Strength", "Agility", "Intelligence"][
+                randomHero.primary_attr
+              ] || "Unknown",
+          },
+          { type: "Complexity", value: `${randomHero.complexity}/3` },
+        ];
+      } else if (selectedGameType === "clashroyale") {
+        // Fetch Clash Royale cards
+        const cardsResponse = await fetch(
+          `${request.nextUrl.origin}/api/clash-royale/cards`
+        );
+
+        if (!cardsResponse.ok) {
+          const errorData = await cardsResponse.json().catch(() => ({}));
+          const errorMessage =
+            errorData.error ||
+            errorData.message ||
+            "Failed to fetch Clash Royale cards";
+
+          // Provide helpful context
+          if (cardsResponse.status === 403) {
+            throw new Error(
+              `${errorMessage}. Your IP address may not be whitelisted. Check your Clash Royale API key settings.`
+            );
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const cardsData = await cardsResponse.json();
+        const cards: ClashRoyaleCard[] = cardsData.items || [];
+
+        if (cards.length === 0) {
+          throw new Error(
+            "No cards available. Check your Clash Royale API key."
+          );
+        }
+
+        // Select random card
+        randomCard = cards[Math.floor(Math.random() * cards.length)];
+
+        // Generate hints for imposter
+        hints = [
+          { type: "Elixir Cost", value: `${randomCard.elixirCost}` },
+          { type: "Max Level", value: `${randomCard.maxLevel}` },
+        ];
+
+        // Add rarity hint if available (rarity might be in different field)
+        if (randomCard.rarity) {
+          hints.push({ type: "Rarity", value: randomCard.rarity });
+        }
+      }
 
       // Randomly select imposter
       const imposterIndex = Math.floor(Math.random() * room.players.length);
       const updatedPlayers = room.players.map((player, index) => ({
         ...player,
         isImposter: index === imposterIndex,
-        hero: index === imposterIndex ? undefined : randomHero,
+        hero:
+          selectedGameType === "dota2" && index !== imposterIndex
+            ? randomHero
+            : undefined,
+        card:
+          selectedGameType === "clashroyale" && index !== imposterIndex
+            ? randomCard
+            : undefined,
         hasSubmittedClue: false,
         clue: undefined,
       }));
@@ -67,6 +153,9 @@ export async function PATCH(
       const updatedRoom = await updateRoom(roomId, {
         players: updatedPlayers,
         currentHero: randomHero,
+        currentCard: randomCard,
+        gameType: selectedGameType,
+        hints,
         gameState: "playing",
         clues: [],
         votes: [],
@@ -137,10 +226,14 @@ export async function PATCH(
         clues: [],
         votes: [],
         currentHero: undefined,
+        currentCard: undefined,
+        gameType: undefined,
+        hints: undefined,
         players: room.players.map((p) => ({
           ...p,
           isImposter: false,
           hero: undefined,
+          card: undefined,
           clue: undefined,
           hasSubmittedClue: false,
         })),
@@ -152,9 +245,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Error updating room:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

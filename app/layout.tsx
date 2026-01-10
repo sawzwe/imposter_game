@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dota 2 Imposter Game",
-  description: "A word-based imposter game using Dota 2 heroes",
+  title: "Imposter Game",
+  description:
+    "A multiplayer word-based imposter game with Dota 2 heroes and Clash Royale cards",
 };
 
 export default function RootLayout({

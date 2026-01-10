@@ -43,22 +43,73 @@ export default function GameScreen({
                 <h2 className="mb-2 text-xl font-semibold text-red-600 dark:text-red-400">
                   🎭 You are the IMPOSTER!
                 </h2>
-                <p className="text-zinc-700 dark:text-zinc-300">
-                  You don't know the secret hero. Try to blend in by giving a
-                  clue that could apply to any Dota 2 hero!
+                <p className="mb-3 text-zinc-700 dark:text-zinc-300">
+                  You don't know the secret{" "}
+                  {gameRoom.gameType === "clashroyale" ? "card" : "hero"}. Try
+                  to blend in by giving a clue that could apply to any{" "}
+                  {gameRoom.gameType === "clashroyale"
+                    ? "Clash Royale card"
+                    : "Dota 2 hero"}
+                  !
                 </p>
+                {gameRoom.hints && gameRoom.hints.length > 0 && (
+                  <div className="mt-3 rounded-lg bg-yellow-100 p-3 dark:bg-yellow-900/20">
+                    <p className="mb-2 text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                      💡 Hints to help you blend in:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
+                      {gameRoom.hints.map((hint, idx) => (
+                        <li key={idx}>
+                          <span className="font-medium">{hint.type}:</span>{" "}
+                          {hint.value}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <div>
                 <h2 className="mb-2 text-xl font-semibold text-green-600 dark:text-green-400">
-                  ✅ You know the hero!
+                  ✅ You know the{" "}
+                  {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
                 </h2>
-                <p className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                  Secret Hero: {gameRoom.currentHero?.name_english_loc}
-                </p>
+                <div className="mb-2 flex items-center gap-4">
+                  {gameRoom.gameType === "clashroyale" &&
+                    gameRoom.currentCard?.iconUrls?.medium && (
+                      <img
+                        src={gameRoom.currentCard.iconUrls.medium}
+                        alt={gameRoom.currentCard.name}
+                        className="h-20 w-20 rounded-lg object-cover"
+                      />
+                    )}
+                  <div>
+                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                      Secret{" "}
+                      {gameRoom.gameType === "clashroyale" ? "Card" : "Hero"}:{" "}
+                      {gameRoom.gameType === "clashroyale"
+                        ? gameRoom.currentCard?.name
+                        : gameRoom.currentHero?.name_english_loc}
+                    </p>
+                    {gameRoom.gameType === "clashroyale" &&
+                      gameRoom.currentCard && (
+                        <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                          <span className="font-medium">Elixir Cost:</span>{" "}
+                          {gameRoom.currentCard.elixirCost} |{" "}
+                          {gameRoom.currentCard.rarity && (
+                            <>
+                              <span className="font-medium">Rarity:</span>{" "}
+                              {gameRoom.currentCard.rarity}
+                            </>
+                          )}
+                        </div>
+                      )}
+                  </div>
+                </div>
                 <p className="text-zinc-700 dark:text-zinc-300">
-                  Give a clue about this hero without being too obvious. Try to
-                  identify the imposter!
+                  Give a clue about this{" "}
+                  {gameRoom.gameType === "clashroyale" ? "card" : "hero"}{" "}
+                  without being too obvious. Try to identify the imposter!
                 </p>
               </div>
             )}
@@ -101,7 +152,8 @@ export default function GameScreen({
 
           <div className="mb-4">
             <h3 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">
-              Submitted Clues ({gameRoom.clues.length} / {gameRoom.players.length})
+              Submitted Clues ({gameRoom.clues.length} /{" "}
+              {gameRoom.players.length})
             </h3>
             <div className="space-y-2">
               {gameRoom.clues.map((clueData) => {
@@ -201,9 +253,7 @@ export default function GameScreen({
     const mostVoted = Object.entries(voteCounts).sort(
       ([, a], [, b]) => b - a
     )[0];
-    const votedOutPlayer = gameRoom.players.find(
-      (p) => p.id === mostVoted[0]
-    );
+    const votedOutPlayer = gameRoom.players.find((p) => p.id === mostVoted[0]);
     const wasImposter = votedOutPlayer?.isImposter;
 
     return (
@@ -214,9 +264,25 @@ export default function GameScreen({
           </h1>
 
           <div className="mb-6 rounded-lg border-2 p-4 bg-zinc-50 dark:bg-zinc-800">
-            <p className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">
-              The secret hero was: {gameRoom.currentHero?.name_english_loc}
-            </p>
+            <div className="mb-2 flex items-center gap-4">
+              {gameRoom.gameType === "clashroyale" &&
+                gameRoom.currentCard?.iconUrls?.medium && (
+                  <img
+                    src={gameRoom.currentCard.iconUrls.medium}
+                    alt={gameRoom.currentCard.name}
+                    className="h-24 w-24 rounded-lg object-cover"
+                  />
+                )}
+              <div>
+                <p className="text-lg font-semibold text-black dark:text-zinc-50">
+                  The secret{" "}
+                  {gameRoom.gameType === "clashroyale" ? "card" : "hero"} was:{" "}
+                  {gameRoom.gameType === "clashroyale"
+                    ? gameRoom.currentCard?.name
+                    : gameRoom.currentHero?.name_english_loc}
+                </p>
+              </div>
+            </div>
             <p className="mb-4 text-lg font-semibold text-black dark:text-zinc-50">
               {votedOutPlayer?.name} was voted out!
             </p>
@@ -267,4 +333,3 @@ export default function GameScreen({
 
   return null;
 }
-

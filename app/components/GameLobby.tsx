@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { GameRoom } from "../types";
+import { GameRoom, GameType } from "../types";
 
 interface GameLobbyProps {
   gameRoom: GameRoom;
   playerId: string;
   playerName: string;
   onAddPlayer: (name: string) => void;
-  onStartGame: () => void;
+  onStartGame: (gameType: GameType) => void;
 }
 
 export default function GameLobby({
@@ -20,6 +20,8 @@ export default function GameLobby({
 }: GameLobbyProps) {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<GameType>("dota2");
+  const [showGameSelection, setShowGameSelection] = useState(false);
 
   const isHost = gameRoom.players[0]?.id === playerId;
   const roomUrl =
@@ -138,13 +140,59 @@ export default function GameLobby({
         )}
 
         {isHost && (
-          <button
-            onClick={onStartGame}
-            disabled={gameRoom.players.length < 3}
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Start Game ({gameRoom.players.length} players)
-          </button>
+          <div className="space-y-4">
+            <div>
+              <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+                Select Game
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setSelectedGame("dota2")}
+                  className={`rounded-lg border-2 p-4 transition-colors ${
+                    selectedGame === "dota2"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="mb-2 text-2xl">⚔️</div>
+                    <div className="font-semibold text-black dark:text-zinc-50">
+                      Dota 2
+                    </div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Heroes
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setSelectedGame("clashroyale")}
+                  className={`rounded-lg border-2 p-4 transition-colors ${
+                    selectedGame === "clashroyale"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="mb-2 text-2xl">👑</div>
+                    <div className="font-semibold text-black dark:text-zinc-50">
+                      Clash Royale
+                    </div>
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Cards
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => onStartGame(selectedGame)}
+              disabled={gameRoom.players.length < 3}
+              className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Start {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} Game
+              ({gameRoom.players.length} players)
+            </button>
+          </div>
         )}
 
         {!isHost && (

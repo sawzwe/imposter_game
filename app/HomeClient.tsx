@@ -186,7 +186,7 @@ export default function HomeClient() {
     }
   };
 
-  const startGame = async () => {
+  const startGame = async (gameType: "dota2" | "clashroyale") => {
     if (!gameRoom || gameRoom.players.length < 3) {
       setError("You need at least 3 players to start the game!");
       return;
@@ -201,6 +201,7 @@ export default function HomeClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "start",
+          gameType,
         }),
       });
 
@@ -290,9 +291,12 @@ export default function HomeClient() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
         <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-          <h1 className="mb-6 text-3xl font-bold text-center text-black dark:text-zinc-50">
-            Dota 2 Imposter Game
+          <h1 className="mb-2 text-3xl font-bold text-center text-black dark:text-zinc-50">
+            Imposter Game
           </h1>
+          <p className="mb-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+            Play with Dota 2 Heroes or Clash Royale Cards
+          </p>
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700 dark:bg-red-900/20 dark:text-red-400">
