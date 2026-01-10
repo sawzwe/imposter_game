@@ -122,12 +122,9 @@ export async function PATCH(
         randomCard = cards[Math.floor(Math.random() * cards.length)];
 
         // Generate hints for imposter
-        hints = [
-          { type: "Elixir Cost", value: `${randomCard.elixirCost}` },
-          { type: "Max Level", value: `${randomCard.maxLevel}` },
-        ];
+        hints = [{ type: "Elixir Cost", value: `${randomCard.elixirCost}` }];
 
-        // Add rarity hint if available (rarity might be in different field)
+        // Add rarity hint if available
         if (randomCard.rarity) {
           hints.push({ type: "Rarity", value: randomCard.rarity });
         }
