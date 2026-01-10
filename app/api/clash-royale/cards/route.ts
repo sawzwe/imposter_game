@@ -1,12 +1,40 @@
 import { NextRequest } from "next/server";
+import { getSupabaseClient } from "../../../lib/supabaseClient";
 
 export async function GET(request: NextRequest) {
   try {
-    const apiKey = process.env.CLASH_ROYALE_API_KEY;
+    // Try to get cards from Supabase first (cached)
+    const supabase = await getSupabaseClient();
 
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("clash_royale_cards")
+        .select("data")
+        .order("id");
+
+      if (!error && data && data.length > 0) {
+        console.log(`✅ Returning ${data.length} cards from Supabase cache`);
+        return Response.json({
+          items: data.map((row) => row.data),
+        });
+      }
+
+      if (error) {
+        console.warn("⚠️  Supabase query error (will try API):", error.message);
+      } else {
+        console.log("ℹ️  No cards in database (will fetch from API)");
+      }
+    }
+
+    // Fallback to API if database is empty or Supabase not configured
+    const apiKey = process.env.CLASH_ROYALE_API_KEY;
     if (!apiKey) {
       return Response.json(
-        { error: "Clash Royale API key not configured" },
+        {
+          error:
+            "Clash Royale API key not configured and no cards in database. Run 'npm run sync-cards' to cache cards.",
+          items: [],
+        },
         { status: 500 }
       );
     }
