@@ -365,6 +365,56 @@ export default function HomeClient() {
     }
   };
 
+  const skipPhase = async () => {
+    if (!gameRoom) return;
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "skip",
+          playerId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.room) {
+        setGameRoom(data.room);
+      } else {
+        setError(data.error || "Failed to skip phase");
+      }
+    } catch (error) {
+      console.error("Error skipping phase:", error);
+      setError("Failed to skip phase");
+    }
+  };
+
+  const nextRound = async () => {
+    if (!gameRoom) return;
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "nextRound",
+          playerId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.room) {
+        setGameRoom(data.room);
+      } else {
+        setError(data.error || "Failed to start next round");
+      }
+    } catch (error) {
+      console.error("Error starting next round:", error);
+      setError("Failed to start next round");
+    }
+  };
+
   if (!gameRoom) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
@@ -489,6 +539,9 @@ export default function HomeClient() {
       onSubmitClue={submitClue}
       onVote={vote}
       onResetGame={resetGame}
+      onSkipPhase={skipPhase}
+      onNextRound={nextRound}
+      onLeaveRoom={leaveRoom}
     />
   );
 }

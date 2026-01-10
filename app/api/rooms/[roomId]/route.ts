@@ -186,6 +186,7 @@ export async function PATCH(
         players: updatedPlayers,
         clues: updatedClues,
         gameState: allSubmitted ? "voting" : room.gameState,
+        votingStartTime: allSubmitted ? Date.now() : room.votingStartTime,
       });
 
       return NextResponse.json({ room: updatedRoom });
@@ -216,12 +217,208 @@ export async function PATCH(
       return NextResponse.json({ room: updatedRoom });
     }
 
+    if (action === "skip") {
+      if (!playerId) {
+        return NextResponse.json(
+          { error: "Player ID is required" },
+          { status: 400 }
+        );
+      }
+
+      // Only host can skip (first player)
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
+        return NextResponse.json(
+          { error: "Only the host can skip phases" },
+          { status: 403 }
+        );
+      }
+
+      // Skip to next phase based on current state
+      if (room.gameState === "playing") {
+        // Skip to voting phase
+        const updatedRoom = await updateRoom(roomId, {
+          gameState: "voting",
+          votingStartTime: Date.now(),
+        });
+        return NextResponse.json({ room: updatedRoom });
+      } else if (room.gameState === "voting") {
+        // Skip to finished phase - determine who was voted out
+        const voteCounts: { [key: string]: number } = {};
+        room.votes.forEach((vote) => {
+          voteCounts[vote.targetId] = (voteCounts[vote.targetId] || 0) + 1;
+        });
+
+        // Find most voted player, or first player if no votes
+        const mostVoted = Object.entries(voteCounts).sort(
+          ([, a], [, b]) => b - a
+        )[0];
+        const votedOutId = mostVoted ? mostVoted[0] : room.players[0]?.id;
+
+        const updatedRoom = await updateRoom(roomId, {
+          gameState: "finished",
+        });
+        return NextResponse.json({ room: updatedRoom });
+      }
+
+      return NextResponse.json(
+        { error: "Cannot skip from current state" },
+        { status: 400 }
+      );
+    }
+
+    if (action === "nextRound") {
+      if (!playerId) {
+        return NextResponse.json(
+          { error: "Player ID is required" },
+          { status: 400 }
+        );
+      }
+
+      // Only host can start next round
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
+        return NextResponse.json(
+          { error: "Only the host can start the next round" },
+          { status: 403 }
+        );
+      }
+
+      // Reset for next round but keep players and game type
+      const updatedRoom = await updateRoom(roomId, {
+        gameState: "playing",
+        round: room.round + 1,
+        clues: [],
+        votes: [],
+        votingStartTime: undefined,
+        currentHero: undefined,
+        currentCard: undefined,
+        hints: undefined,
+        players: room.players.map((p) => ({
+          ...p,
+          isImposter: false,
+          hero: undefined,
+          card: undefined,
+          clue: undefined,
+          hasSubmittedClue: false,
+        })),
+      });
+
+      // Start the game automatically (assign new imposter and hero/card)
+      const selectedGameType = room.gameType || "dota2";
+      let hints: GameHint[] = [];
+      let randomHero: Hero | undefined;
+      let randomCard: ClashRoyaleCard | undefined;
+
+      if (selectedGameType === "dota2") {
+        // Fetch Dota 2 heroes
+        const heroesResponse = await fetch(
+          `${request.nextUrl.origin}/api/heroes`
+        );
+
+        if (!heroesResponse.ok) {
+          throw new Error("Failed to fetch Dota 2 heroes");
+        }
+
+        const heroesData = await heroesResponse.json();
+        const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+
+        if (heroes.length === 0) {
+          throw new Error("No heroes available");
+        }
+
+        // Select random hero
+        randomHero = heroes[Math.floor(Math.random() * heroes.length)];
+
+        // Generate hints for imposter
+        hints = [
+          {
+            type: "Primary Attribute",
+            value:
+              ["Strength", "Agility", "Intelligence"][
+                randomHero.primary_attr
+              ] || "Unknown",
+          },
+          { type: "Complexity", value: `${randomHero.complexity}/3` },
+        ];
+      } else if (selectedGameType === "clashroyale") {
+        // Fetch Clash Royale cards
+        const cardsResponse = await fetch(
+          `${request.nextUrl.origin}/api/clash-royale/cards`
+        );
+
+        if (!cardsResponse.ok) {
+          const errorData = await cardsResponse.json().catch(() => ({}));
+          const errorMessage =
+            errorData.error ||
+            errorData.message ||
+            "Failed to fetch Clash Royale cards";
+
+          // Provide helpful context
+          if (cardsResponse.status === 403) {
+            throw new Error(
+              `${errorMessage}. Your IP address may not be whitelisted. Check your Clash Royale API key settings.`
+            );
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const cardsData = await cardsResponse.json();
+        const cards: ClashRoyaleCard[] = cardsData.items || [];
+
+        if (cards.length === 0) {
+          throw new Error(
+            "No cards available. Check your Clash Royale API key."
+          );
+        }
+
+        // Select random card
+        randomCard = cards[Math.floor(Math.random() * cards.length)];
+
+        // Generate hints for imposter
+        hints = [{ type: "Elixir Cost", value: `${randomCard.elixirCost}` }];
+
+        // Add rarity hint if available
+        if (randomCard.rarity) {
+          hints.push({ type: "Rarity", value: randomCard.rarity });
+        }
+      }
+
+      // Randomly select new imposter
+      const imposterIndex = Math.floor(
+        Math.random() * updatedRoom!.players.length
+      );
+      const finalPlayers = updatedRoom!.players.map((player, index) => ({
+        ...player,
+        isImposter: index === imposterIndex,
+        hero:
+          selectedGameType === "dota2" && index !== imposterIndex
+            ? randomHero
+            : undefined,
+        card:
+          selectedGameType === "clashroyale" && index !== imposterIndex
+            ? randomCard
+            : undefined,
+      }));
+
+      const finalRoom = await updateRoom(roomId, {
+        players: finalPlayers,
+        currentHero: randomHero,
+        currentCard: randomCard,
+        hints,
+      });
+
+      return NextResponse.json({ room: finalRoom });
+    }
+
     if (action === "reset") {
       const updatedRoom = await updateRoom(roomId, {
         gameState: "lobby",
         round: 1,
         clues: [],
         votes: [],
+        votingStartTime: undefined,
         currentHero: undefined,
         currentCard: undefined,
         gameType: undefined,
