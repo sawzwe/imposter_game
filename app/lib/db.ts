@@ -57,7 +57,11 @@ class InMemoryDatabase implements Database {
     const room = this.gameRooms.get(roomId);
     if (!room) return null;
 
-    const updatedRoom = { ...room, ...updates };
+    const updatedRoom = {
+      ...room,
+      ...updates,
+      lastUpdated: Date.now(), // Always update timestamp
+    };
     this.gameRooms.set(roomId, updatedRoom);
     return updatedRoom;
   }
@@ -108,11 +112,11 @@ class SupabaseDatabase implements Database {
     try {
       // Dynamic import to avoid bundling in client
       const { createClient } = await import("@supabase/supabase-js");
-      
+
       if (!this.supabaseUrl || !this.supabaseKey) {
         throw new Error("Supabase credentials not configured");
       }
-      
+
       return createClient(this.supabaseUrl, this.supabaseKey, {
         auth: {
           autoRefreshToken: false,
@@ -125,7 +129,9 @@ class SupabaseDatabase implements Database {
     } catch (error) {
       console.error("Error creating Supabase client:", error);
       throw new Error(
-        error instanceof Error ? error.message : "Failed to create Supabase client"
+        error instanceof Error
+          ? error.message
+          : "Failed to create Supabase client"
       );
     }
   }
@@ -201,7 +207,11 @@ class SupabaseDatabase implements Database {
     const room = await this.getRoom(roomId);
     if (!room) return null;
 
-    const updatedRoom = { ...room, ...updates };
+    const updatedRoom = {
+      ...room,
+      ...updates,
+      lastUpdated: Date.now(), // Always update timestamp
+    };
 
     const supabase = await this.getClient();
     const { error } = await supabase

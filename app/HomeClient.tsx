@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
@@ -16,6 +16,7 @@ export default function HomeClient() {
   const [roomCode, setRoomCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastRoomUpdateRef = useRef<number>(0);
 
   // Extract room code from roomId (format: room_XXXXXX)
   const getRoomCodeFromId = (roomId: string): string => {
@@ -38,6 +39,51 @@ export default function HomeClient() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  // Helper function to fetch room state
+  const fetchRoomState = useCallback(
+    async (roomId: string) => {
+      try {
+        const response = await fetch(`/api/rooms?roomId=${roomId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.room) {
+            // Check if current player is still in the room (might have been kicked)
+            const currentPlayerId = localStorage.getItem("playerId");
+            const playerStillInRoom = data.room.players.some(
+              (p: any) => p.id === currentPlayerId
+            );
+
+            if (!playerStillInRoom) {
+              // Player was kicked, return to home
+              leaveRoom();
+              return null;
+            }
+
+            // Only update if room has actually changed
+            if (
+              data.room.lastUpdated &&
+              data.room.lastUpdated > lastRoomUpdateRef.current
+            ) {
+              lastRoomUpdateRef.current = data.room.lastUpdated;
+              return data.room;
+            } else if (!data.room.lastUpdated) {
+              // Fallback if lastUpdated not set
+              return data.room;
+            }
+            return null;
+          }
+        } else if (response.status === 404) {
+          // Room not found, clear state
+          leaveRoom();
+        }
+      } catch (error) {
+        console.error("Error fetching room:", error);
+      }
+      return null;
+    },
+    [leaveRoom]
+  );
 
   const joinRoom = async (roomIdOrCode: string, name?: string) => {
     const nameToUse = name || playerName.trim();
@@ -78,6 +124,9 @@ export default function HomeClient() {
 
       localStorage.setItem("playerName", nameToUse);
       localStorage.setItem("roomId", data.room.id);
+      if (data.room.lastUpdated) {
+        lastRoomUpdateRef.current = data.room.lastUpdated;
+      }
       setGameRoom(data.room);
     } catch (error: any) {
       console.error("Error joining room:", error);
@@ -162,9 +211,23 @@ export default function HomeClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomIdFromUrl]);
 
-  // Poll for game state updates
+  // Poll for game state updates - less frequently and only when needed
   useEffect(() => {
     if (!gameRoom) return;
+
+    // Update lastRoomUpdateRef when gameRoom changes
+    if (gameRoom.lastUpdated) {
+      lastRoomUpdateRef.current = gameRoom.lastUpdated;
+    }
+
+    // Determine polling interval based on game state
+    // More frequent during active gameplay, less frequent in lobby/finished
+    const getPollInterval = () => {
+      if (gameRoom.gameState === "playing" || gameRoom.gameState === "voting") {
+        return 5000; // 5 seconds during active gameplay
+      }
+      return 10000; // 10 seconds in lobby or finished state
+    };
 
     const pollInterval = setInterval(async () => {
       try {
@@ -175,41 +238,17 @@ export default function HomeClient() {
           return;
         }
 
-        const response = await fetch(`/api/rooms?roomId=${gameRoom.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.room) {
-            // Check if current player is still in the room (might have been kicked)
-            const currentPlayerId = localStorage.getItem("playerId");
-            const playerStillInRoom = data.room.players.some(
-              (p: any) => p.id === currentPlayerId
-            );
-
-            if (!playerStillInRoom) {
-              // Player was kicked, return to home
-              clearInterval(pollInterval);
-              leaveRoom();
-              return;
-            }
-
-            setGameRoom(data.room);
-          } else {
-            // Room doesn't exist anymore, clear state
-            clearInterval(pollInterval);
-            leaveRoom();
-          }
-        } else if (response.status === 404) {
-          // Room not found, clear state
-          clearInterval(pollInterval);
-          leaveRoom();
+        const updatedRoom = await fetchRoomState(gameRoom.id);
+        if (updatedRoom) {
+          setGameRoom(updatedRoom);
         }
       } catch (error) {
         console.error("Error polling room:", error);
       }
-    }, 2000); // Poll every 2 seconds
+    }, getPollInterval());
 
     return () => clearInterval(pollInterval);
-  }, [gameRoom?.id, leaveRoom]);
+  }, [gameRoom?.id, gameRoom?.gameState, fetchRoomState]);
 
   const createRoom = async () => {
     if (!playerName.trim()) {
@@ -244,6 +283,9 @@ export default function HomeClient() {
 
       localStorage.setItem("playerName", playerName.trim());
       localStorage.setItem("roomId", data.room.id);
+      if (data.room.lastUpdated) {
+        lastRoomUpdateRef.current = data.room.lastUpdated;
+      }
       setGameRoom(data.room);
     } catch (error: any) {
       console.error("Error creating room:", error);
@@ -276,6 +318,9 @@ export default function HomeClient() {
 
       const data = await response.json();
       if (response.ok && data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
         setGameRoom(data.room);
       }
     } catch (error) {
@@ -308,7 +353,12 @@ export default function HomeClient() {
         throw new Error(data.error || "Failed to start game");
       }
 
-      setGameRoom(data.room);
+      if (data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
+        setGameRoom(data.room);
+      }
     } catch (error: any) {
       console.error("Error starting game:", error);
       setError(error.message || "Failed to start game");
@@ -333,7 +383,16 @@ export default function HomeClient() {
 
       const data = await response.json();
       if (response.ok && data.room) {
+        // Immediately update after user action
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
         setGameRoom(data.room);
+        // Also fetch latest state to ensure we have all updates
+        setTimeout(async () => {
+          const latestRoom = await fetchRoomState(data.room.id);
+          if (latestRoom) setGameRoom(latestRoom);
+        }, 500);
       }
     } catch (error) {
       console.error("Error submitting clue:", error);
@@ -356,7 +415,16 @@ export default function HomeClient() {
 
       const data = await response.json();
       if (response.ok && data.room) {
+        // Immediately update after user action
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
         setGameRoom(data.room);
+        // Also fetch latest state to ensure we have all updates
+        setTimeout(async () => {
+          const latestRoom = await fetchRoomState(data.room.id);
+          if (latestRoom) setGameRoom(latestRoom);
+        }, 500);
       }
     } catch (error) {
       console.error("Error voting:", error);
@@ -377,6 +445,9 @@ export default function HomeClient() {
 
       const data = await response.json();
       if (response.ok && data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
         setGameRoom(data.room);
       }
     } catch (error) {

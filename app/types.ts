@@ -51,4 +51,5 @@ export interface GameRoom {
   clues: { playerId: string; clue: string }[];
   votes: { voterId: string; targetId: string }[];
   votingStartTime?: number; // Timestamp when voting phase started
+  lastUpdated?: number; // Timestamp of last update for efficient polling
 }
