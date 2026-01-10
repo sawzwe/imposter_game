@@ -125,10 +125,14 @@ export default function HomeClient() {
                 if (playerInRoom) {
                   setGameRoom(data.room);
                 } else {
-                  // Player not in room, try to rejoin
-                  await joinRoom(storedRoomId, storedName);
+                  // Player not in room (might have been kicked), clear state and go home
+                  localStorage.removeItem("roomId");
+                  // Don't try to rejoin automatically if kicked
                 }
               }
+            } else if (response.status === 404) {
+              // Room doesn't exist, clear state
+              localStorage.removeItem("roomId");
             }
           } catch (error) {
             console.error("Error restoring session:", error);
@@ -175,13 +179,28 @@ export default function HomeClient() {
         if (response.ok) {
           const data = await response.json();
           if (data.room) {
+            // Check if current player is still in the room (might have been kicked)
+            const currentPlayerId = localStorage.getItem("playerId");
+            const playerStillInRoom = data.room.players.some(
+              (p: any) => p.id === currentPlayerId
+            );
+
+            if (!playerStillInRoom) {
+              // Player was kicked, return to home
+              clearInterval(pollInterval);
+              leaveRoom();
+              return;
+            }
+
             setGameRoom(data.room);
           } else {
             // Room doesn't exist anymore, clear state
+            clearInterval(pollInterval);
             leaveRoom();
           }
         } else if (response.status === 404) {
           // Room not found, clear state
+          clearInterval(pollInterval);
           leaveRoom();
         }
       } catch (error) {
@@ -415,6 +434,57 @@ export default function HomeClient() {
     }
   };
 
+  const toggleHints = async () => {
+    if (!gameRoom) return;
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggleHints",
+          playerId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.room) {
+        setGameRoom(data.room);
+      } else {
+        setError(data.error || "Failed to toggle hints");
+      }
+    } catch (error) {
+      console.error("Error toggling hints:", error);
+      setError("Failed to toggle hints");
+    }
+  };
+
+  const kickPlayer = async (targetPlayerId: string) => {
+    if (!gameRoom) return;
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "kickPlayer",
+          playerId,
+          targetPlayerId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.room) {
+        setGameRoom(data.room);
+      } else {
+        setError(data.error || "Failed to kick player");
+      }
+    } catch (error) {
+      console.error("Error kicking player:", error);
+      setError("Failed to kick player");
+    }
+  };
+
   if (!gameRoom) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
@@ -527,6 +597,8 @@ export default function HomeClient() {
         onAddPlayer={addPlayer}
         onStartGame={startGame}
         onLeaveRoom={leaveRoom}
+        onToggleHints={toggleHints}
+        onKickPlayer={kickPlayer}
       />
     );
   }

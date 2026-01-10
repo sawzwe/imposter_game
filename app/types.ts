@@ -45,6 +45,7 @@ export interface GameRoom {
   currentCard?: ClashRoyaleCard;
   gameType?: GameType;
   hints?: GameHint[];
+  hintsEnabled?: boolean; // Whether hints are enabled for imposters
   gameState: "lobby" | "playing" | "voting" | "finished";
   round: number;
   clues: { playerId: string; clue: string }[];

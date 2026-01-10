@@ -98,19 +98,29 @@ export default function GameScreen({
                     : "Dota 2 hero"}
                   !
                 </p>
-                {gameRoom.hints && gameRoom.hints.length > 0 && (
-                  <div className="mt-3 rounded-lg bg-yellow-100 p-3 dark:bg-yellow-900/20">
-                    <p className="mb-2 text-sm font-semibold text-yellow-800 dark:text-yellow-300">
-                      💡 Hints to help you blend in:
+                {gameRoom.hintsEnabled !== false &&
+                  gameRoom.hints &&
+                  gameRoom.hints.length > 0 && (
+                    <div className="mt-3 rounded-lg bg-yellow-100 p-3 dark:bg-yellow-900/20">
+                      <p className="mb-2 text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                        💡 Hints to help you blend in:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
+                        {gameRoom.hints.map((hint, idx) => (
+                          <li key={idx}>
+                            <span className="font-medium">{hint.type}:</span>{" "}
+                            {hint.value}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {gameRoom.hintsEnabled === false && (
+                  <div className="mt-3 rounded-lg bg-red-100 p-3 dark:bg-red-900/20">
+                    <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                      ⚠️ Hints are disabled - you have no clues about the secret{" "}
+                      {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
                     </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
-                      {gameRoom.hints.map((hint, idx) => (
-                        <li key={idx}>
-                          <span className="font-medium">{hint.type}:</span>{" "}
-                          {hint.value}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 )}
               </div>
@@ -457,9 +467,9 @@ export default function GameScreen({
                   Next Round
                 </button>
               )}
-              {onLeaveRoom && (
+              {onResetGame && (
                 <button
-                  onClick={onLeaveRoom}
+                  onClick={onResetGame}
                   className="w-full rounded-lg border-2 border-zinc-300 bg-white px-4 py-3 font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 >
                   Go Home

@@ -11,6 +11,8 @@ interface GameLobbyProps {
   onAddPlayer: (name: string) => void;
   onStartGame: (gameType: GameType) => void;
   onLeaveRoom?: () => void;
+  onToggleHints?: () => void;
+  onKickPlayer?: (playerId: string) => void;
 }
 
 export default function GameLobby({
@@ -20,6 +22,8 @@ export default function GameLobby({
   onAddPlayer,
   onStartGame,
   onLeaveRoom,
+  onToggleHints,
+  onKickPlayer,
 }: GameLobbyProps) {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [copied, setCopied] = useState(false);
@@ -151,6 +155,14 @@ export default function GameLobby({
                     </span>
                   )}
                 </span>
+                {isHost && player.id !== playerId && onKickPlayer && (
+                  <button
+                    onClick={() => onKickPlayer(player.id)}
+                    className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                  >
+                    Kick
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -184,6 +196,33 @@ export default function GameLobby({
 
         {isHost && (
           <div className="space-y-4">
+            {onToggleHints && (
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                      Imposter Hints
+                    </h3>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {gameRoom.hintsEnabled !== false
+                        ? "Hints are enabled for imposters"
+                        : "Hints are disabled - imposters get no clues"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={onToggleHints}
+                    className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
+                      gameRoom.hintsEnabled !== false
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-zinc-300 text-zinc-700 hover:bg-zinc-400 dark:bg-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-500"
+                    }`}
+                  >
+                    {gameRoom.hintsEnabled !== false ? "Enabled" : "Disabled"}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
                 Select Game

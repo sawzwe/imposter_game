@@ -152,10 +152,11 @@ export async function PATCH(
         currentHero: randomHero,
         currentCard: randomCard,
         gameType: selectedGameType,
-        hints,
+        hints: room.hintsEnabled !== false ? hints : [], // Only set hints if enabled
         gameState: "playing",
         clues: [],
         votes: [],
+        hintsEnabled: room.hintsEnabled !== false, // Default to true if not set
       });
 
       return NextResponse.json({ room: updatedRoom });
@@ -406,10 +407,79 @@ export async function PATCH(
         players: finalPlayers,
         currentHero: randomHero,
         currentCard: randomCard,
-        hints,
+        hints: room.hintsEnabled !== false ? hints : [], // Only set hints if enabled
       });
 
       return NextResponse.json({ room: finalRoom });
+    }
+
+    if (action === "toggleHints") {
+      if (!playerId) {
+        return NextResponse.json(
+          { error: "Player ID is required" },
+          { status: 400 }
+        );
+      }
+
+      // Only host can toggle hints
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
+        return NextResponse.json(
+          { error: "Only the host can toggle hints" },
+          { status: 403 }
+        );
+      }
+
+      const updatedRoom = await updateRoom(roomId, {
+        hintsEnabled: room.hintsEnabled === false ? true : false,
+      });
+
+      return NextResponse.json({ room: updatedRoom });
+    }
+
+    if (action === "kickPlayer") {
+      if (!playerId || !targetPlayerId) {
+        return NextResponse.json(
+          { error: "Player ID and target player ID are required" },
+          { status: 400 }
+        );
+      }
+
+      // Only host can kick players
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
+        return NextResponse.json(
+          { error: "Only the host can kick players" },
+          { status: 403 }
+        );
+      }
+
+      // Cannot kick yourself
+      if (playerId === targetPlayerId) {
+        return NextResponse.json(
+          { error: "Cannot kick yourself" },
+          { status: 400 }
+        );
+      }
+
+      // Cannot kick the host
+      if (targetPlayerId === room.players[0]?.id) {
+        return NextResponse.json(
+          { error: "Cannot kick the host" },
+          { status: 400 }
+        );
+      }
+
+      // Remove player from room
+      const updatedPlayers = room.players.filter(
+        (p) => p.id !== targetPlayerId
+      );
+
+      const updatedRoom = await updateRoom(roomId, {
+        players: updatedPlayers,
+      });
+
+      return NextResponse.json({ room: updatedRoom });
     }
 
     if (action === "reset") {
