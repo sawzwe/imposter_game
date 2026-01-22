@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
+import LoadingSpinner from "./components/LoadingSpinner";
 import { GameRoom } from "./types";
+import { getUserFriendlyError, retryWithBackoff } from "./lib/errorHandler";
 
 export default function HomeClient() {
   const searchParams = useSearchParams();
@@ -128,9 +130,10 @@ export default function HomeClient() {
         lastRoomUpdateRef.current = data.room.lastUpdated;
       }
       setGameRoom(data.room);
+      setError(null);
     } catch (error: any) {
       console.error("Error joining room:", error);
-      setError(error.message || "Failed to join room");
+      setError(getUserFriendlyError(error));
     } finally {
       setIsLoading(false);
     }
@@ -282,6 +285,7 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", playerName.trim());
+      setError(null);
       localStorage.setItem("roomId", data.room.id);
       if (data.room.lastUpdated) {
         lastRoomUpdateRef.current = data.room.lastUpdated;
@@ -569,7 +573,14 @@ export default function HomeClient() {
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700 dark:bg-red-900/20 dark:text-red-400">
-              {error}
+              <p className="font-medium">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="mb-4">
+              <LoadingSpinner text="Loading..." />
             </div>
           )}
 

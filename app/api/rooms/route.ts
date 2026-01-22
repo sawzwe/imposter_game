@@ -5,6 +5,12 @@ import {
   addPlayerToRoom,
   updateRoom,
 } from "../../lib/gameStore";
+import {
+  sanitizePlayerName,
+  validateRoomCode,
+  validatePlayerId,
+  validateRoomId,
+} from "../../lib/validation";
 
 // Generate a short, user-friendly room code (6 characters, uppercase)
 function generateRoomCode(): string {
@@ -29,12 +35,29 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Validate player ID
+      if (!validatePlayerId(playerId)) {
+        return NextResponse.json(
+          { error: "Invalid player ID format" },
+          { status: 400 }
+        );
+      }
+
+      // Sanitize player name
+      const sanitizedName = sanitizePlayerName(playerName);
+      if (!sanitizedName) {
+        return NextResponse.json(
+          { error: "Player name cannot be empty" },
+          { status: 400 }
+        );
+      }
+
       // Generate short room code
       const roomCode = generateRoomCode();
       const newRoomId = `room_${roomCode}`;
       const room = await createRoom(newRoomId, {
         id: playerId,
-        name: playerName,
+        name: sanitizedName,
       });
       return NextResponse.json({ room, roomCode });
     }
@@ -43,6 +66,39 @@ export async function POST(request: NextRequest) {
       if ((!roomId && !roomCode) || !playerId || !playerName) {
         return NextResponse.json(
           { error: "Room code/ID, player ID, and name are required" },
+          { status: 400 }
+        );
+      }
+
+      // Validate player ID
+      if (!validatePlayerId(playerId)) {
+        return NextResponse.json(
+          { error: "Invalid player ID format" },
+          { status: 400 }
+        );
+      }
+
+      // Validate room code if provided
+      if (roomCode && !validateRoomCode(roomCode)) {
+        return NextResponse.json(
+          { error: "Invalid room code format" },
+          { status: 400 }
+        );
+      }
+
+      // Validate room ID if provided
+      if (roomId && !validateRoomId(roomId)) {
+        return NextResponse.json(
+          { error: "Invalid room ID format" },
+          { status: 400 }
+        );
+      }
+
+      // Sanitize player name
+      const sanitizedName = sanitizePlayerName(playerName);
+      if (!sanitizedName) {
+        return NextResponse.json(
+          { error: "Player name cannot be empty" },
           { status: 400 }
         );
       }
@@ -58,13 +114,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Room not found" }, { status: 404 });
       }
 
+      // Check room capacity (max 10 players)
+      if (room.players.length >= 10) {
+        return NextResponse.json(
+          { error: "Room is full (maximum 10 players)" },
+          { status: 400 }
+        );
+      }
+
       // Check if player already in room
       const existingPlayer = room.players.find((p) => p.id === playerId);
       if (existingPlayer) {
         // If player exists but name changed, update the name
-        if (existingPlayer.name !== playerName) {
+        if (existingPlayer.name !== sanitizedName) {
           const updatedPlayers = room.players.map((p) =>
-            p.id === playerId ? { ...p, name: playerName } : p
+            p.id === playerId ? { ...p, name: sanitizedName } : p
           );
           const updatedRoom = {
             ...room,
@@ -80,7 +144,7 @@ export async function POST(request: NextRequest) {
       // Add player to room
       const updatedRoom = await addPlayerToRoom(actualRoomId, {
         id: playerId,
-        name: playerName,
+        name: sanitizedName,
       });
       if (!updatedRoom) {
         return NextResponse.json(
@@ -110,6 +174,14 @@ export async function GET(request: NextRequest) {
     if (!roomId) {
       return NextResponse.json(
         { error: "Room ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate room ID format
+    if (!validateRoomId(roomId)) {
+      return NextResponse.json(
+        { error: "Invalid room ID format" },
         { status: 400 }
       );
     }

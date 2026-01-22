@@ -16,6 +16,7 @@ export interface Database {
     player: { id: string; name: string }
   ): Promise<GameRoom | null>;
   deleteRoom(roomId: string): Promise<boolean>;
+  cleanupInactiveRooms(maxAgeMs: number): Promise<number>; // Returns number of rooms deleted
 }
 
 // In-memory implementation (for local dev/testing)
@@ -91,6 +92,23 @@ class InMemoryDatabase implements Database {
 
   async deleteRoom(roomId: string): Promise<boolean> {
     return this.gameRooms.delete(roomId);
+  }
+
+  async cleanupInactiveRooms(maxAgeMs: number): Promise<number> {
+    const now = Date.now();
+    let deletedCount = 0;
+
+    for (const [roomId, room] of this.gameRooms.entries()) {
+      const lastUpdated = room.lastUpdated || 0;
+      const age = now - lastUpdated;
+
+      if (age > maxAgeMs) {
+        this.gameRooms.delete(roomId);
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
   }
 }
 
@@ -256,6 +274,30 @@ class SupabaseDatabase implements Database {
       .eq("id", roomId);
 
     return !error;
+  }
+
+  async cleanupInactiveRooms(maxAgeMs: number): Promise<number> {
+    try {
+      const supabase = await this.getClient();
+      const cutoffTime = new Date(Date.now() - maxAgeMs).toISOString();
+
+      // Delete rooms that haven't been updated in the last maxAgeMs
+      const { data, error } = await supabase
+        .from("game_rooms")
+        .delete()
+        .lt("updated_at", cutoffTime)
+        .select("id");
+
+      if (error) {
+        console.error("Error cleaning up inactive rooms:", error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      console.error("Error in cleanupInactiveRooms:", error);
+      return 0;
+    }
   }
 }
 

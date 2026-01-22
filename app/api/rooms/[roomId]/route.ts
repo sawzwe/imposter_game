@@ -7,6 +7,11 @@ import {
   GameType,
   GameHint,
 } from "../../../types";
+import {
+  sanitizeClue,
+  validatePlayerId,
+  validateRoomId,
+} from "../../../lib/validation";
 
 export async function GET(
   request: NextRequest,
@@ -34,8 +39,25 @@ export async function PATCH(
 ) {
   try {
     const { roomId } = await params;
+
+    // Validate room ID format
+    if (!validateRoomId(roomId)) {
+      return NextResponse.json(
+        { error: "Invalid room ID format" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { action, playerId, clue, targetPlayerId, gameType } = body;
+
+    // Validate player ID if provided
+    if (playerId && !validatePlayerId(playerId)) {
+      return NextResponse.json(
+        { error: "Invalid player ID format" },
+        { status: 400 }
+      );
+    }
 
     const room = await getRoom(roomId);
     if (!room) {
@@ -170,15 +192,33 @@ export async function PATCH(
         );
       }
 
-      const updatedPlayers = room.players.map((player) =>
-        player.id === playerId
-          ? { ...player, clue, hasSubmittedClue: true }
-          : player
+      // Validate player is in room
+      const player = room.players.find((p) => p.id === playerId);
+      if (!player) {
+        return NextResponse.json(
+          { error: "Player not found in room" },
+          { status: 404 }
+        );
+      }
+
+      // Sanitize clue
+      const sanitizedClue = sanitizeClue(clue);
+      if (!sanitizedClue) {
+        return NextResponse.json(
+          { error: "Clue cannot be empty" },
+          { status: 400 }
+        );
+      }
+
+      const updatedPlayers = room.players.map((p) =>
+        p.id === playerId
+          ? { ...p, clue: sanitizedClue, hasSubmittedClue: true }
+          : p
       );
 
       const updatedClues = [
         ...room.clues.filter((c) => c.playerId !== playerId),
-        { playerId, clue },
+        { playerId, clue: sanitizedClue },
       ];
 
       const allSubmitted = updatedPlayers.every((p) => p.hasSubmittedClue);
@@ -198,6 +238,32 @@ export async function PATCH(
         return NextResponse.json(
           { error: "Player ID and target player ID are required" },
           { status: 400 }
+        );
+      }
+
+      // Validate both player IDs
+      if (!validatePlayerId(playerId) || !validatePlayerId(targetPlayerId)) {
+        return NextResponse.json(
+          { error: "Invalid player ID format" },
+          { status: 400 }
+        );
+      }
+
+      // Validate voter is in room
+      const voter = room.players.find((p) => p.id === playerId);
+      if (!voter) {
+        return NextResponse.json(
+          { error: "Voter not found in room" },
+          { status: 404 }
+        );
+      }
+
+      // Validate target is in room
+      const target = room.players.find((p) => p.id === targetPlayerId);
+      if (!target) {
+        return NextResponse.json(
+          { error: "Target player not found in room" },
+          { status: 404 }
         );
       }
 

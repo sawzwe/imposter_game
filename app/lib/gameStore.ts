@@ -30,3 +30,7 @@ export async function addPlayerToRoom(
 export async function deleteRoom(roomId: string): Promise<boolean> {
   return db.deleteRoom(roomId);
 }
+
+export async function cleanupInactiveRooms(maxAgeMs: number): Promise<number> {
+  return db.cleanupInactiveRooms(maxAgeMs);
+}
