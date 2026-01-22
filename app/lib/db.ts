@@ -16,6 +16,7 @@ export interface Database {
     player: { id: string; name: string }
   ): Promise<GameRoom | null>;
   deleteRoom(roomId: string): Promise<boolean>;
+  cleanupInactiveRooms(maxAgeMs: number): Promise<number>; // Returns number of rooms deleted
 }
 
 // In-memory implementation (for local dev/testing)
@@ -57,7 +58,11 @@ class InMemoryDatabase implements Database {
     const room = this.gameRooms.get(roomId);
     if (!room) return null;
 
-    const updatedRoom = { ...room, ...updates };
+    const updatedRoom = {
+      ...room,
+      ...updates,
+      lastUpdated: Date.now(), // Always update timestamp
+    };
     this.gameRooms.set(roomId, updatedRoom);
     return updatedRoom;
   }
@@ -88,6 +93,23 @@ class InMemoryDatabase implements Database {
   async deleteRoom(roomId: string): Promise<boolean> {
     return this.gameRooms.delete(roomId);
   }
+
+  async cleanupInactiveRooms(maxAgeMs: number): Promise<number> {
+    const now = Date.now();
+    let deletedCount = 0;
+
+    for (const [roomId, room] of this.gameRooms.entries()) {
+      const lastUpdated = room.lastUpdated || 0;
+      const age = now - lastUpdated;
+
+      if (age > maxAgeMs) {
+        this.gameRooms.delete(roomId);
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
+  }
 }
 
 // Supabase implementation
@@ -108,11 +130,11 @@ class SupabaseDatabase implements Database {
     try {
       // Dynamic import to avoid bundling in client
       const { createClient } = await import("@supabase/supabase-js");
-      
+
       if (!this.supabaseUrl || !this.supabaseKey) {
         throw new Error("Supabase credentials not configured");
       }
-      
+
       return createClient(this.supabaseUrl, this.supabaseKey, {
         auth: {
           autoRefreshToken: false,
@@ -125,7 +147,9 @@ class SupabaseDatabase implements Database {
     } catch (error) {
       console.error("Error creating Supabase client:", error);
       throw new Error(
-        error instanceof Error ? error.message : "Failed to create Supabase client"
+        error instanceof Error
+          ? error.message
+          : "Failed to create Supabase client"
       );
     }
   }
@@ -201,7 +225,11 @@ class SupabaseDatabase implements Database {
     const room = await this.getRoom(roomId);
     if (!room) return null;
 
-    const updatedRoom = { ...room, ...updates };
+    const updatedRoom = {
+      ...room,
+      ...updates,
+      lastUpdated: Date.now(), // Always update timestamp
+    };
 
     const supabase = await this.getClient();
     const { error } = await supabase
@@ -246,6 +274,30 @@ class SupabaseDatabase implements Database {
       .eq("id", roomId);
 
     return !error;
+  }
+
+  async cleanupInactiveRooms(maxAgeMs: number): Promise<number> {
+    try {
+      const supabase = await this.getClient();
+      const cutoffTime = new Date(Date.now() - maxAgeMs).toISOString();
+
+      // Delete rooms that haven't been updated in the last maxAgeMs
+      const { data, error } = await supabase
+        .from("game_rooms")
+        .delete()
+        .lt("updated_at", cutoffTime)
+        .select("id");
+
+      if (error) {
+        console.error("Error cleaning up inactive rooms:", error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      console.error("Error in cleanupInactiveRooms:", error);
+      return 0;
+    }
   }
 }
 
