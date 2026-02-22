@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
+import { useToast } from "./ToastContext";
 import { GameRoom, GameType } from "../types";
 
 interface GameLobbyProps {
@@ -29,7 +30,7 @@ export default function GameLobby({
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [selectedGame, setSelectedGame] = useState<GameType>("dota2");
-  const [showGameSelection, setShowGameSelection] = useState(false);
+  const { showToast } = useToast();
 
   const isHost = gameRoom.players[0]?.id === playerId;
 
@@ -50,6 +51,7 @@ export default function GameLobby({
   const handleAddPlayer = () => {
     if (newPlayerName.trim()) {
       onAddPlayer(newPlayerName.trim());
+      showToast(`${newPlayerName.trim()} joined!`);
       setNewPlayerName("");
     }
   };
@@ -59,9 +61,11 @@ export default function GameLobby({
       try {
         await navigator.clipboard.writeText(roomUrl);
         setCopied(true);
+        showToast("Invite link copied!");
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
         console.error("Failed to copy:", err);
+        showToast("Copy failed");
       }
     }
   };
@@ -71,48 +75,52 @@ export default function GameLobby({
       try {
         await navigator.clipboard.writeText(roomCode);
         setCopiedCode(true);
+        showToast("Room code copied!");
         setTimeout(() => setCopiedCode(false), 2000);
       } catch (err) {
         console.error("Failed to copy:", err);
+        showToast("Copy failed");
       }
     }
   };
 
+  const canStart = gameRoom.players.length >= 3;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-        <h1 className="mb-6 text-3xl font-bold text-center text-black dark:text-zinc-50">
+    <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+        <h1 className="gradient-text mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
           Game Lobby
         </h1>
 
         <div className="mb-6">
-          <div className="mb-4 rounded-lg border-2 border-blue-500 bg-blue-50 p-6 text-center dark:border-blue-400 dark:bg-blue-900/20">
-            <p className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="mb-4 rounded-2xl border-2 border-[var(--blue)] bg-[#0d1220] p-6 text-center shadow-[0_0_28px_var(--blue-glow)]">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
               Room Code
             </p>
             <div className="flex items-center justify-center gap-3">
-              <p className="text-5xl font-bold tracking-widest text-blue-600 dark:text-blue-400">
+              <p className="font-['Rajdhani'] text-4xl font-bold tracking-[0.2em] text-[#5b8fff]">
                 {roomCode}
               </p>
               <button
                 onClick={copyRoomCode}
-                className="flex items-center justify-center rounded-lg bg-blue-600 p-3 text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="flex items-center justify-center rounded-xl bg-[var(--blue)] p-2.5 text-white transition-all hover:scale-110 hover:brightness-110 active:scale-95"
                 title="Copy room code"
               >
                 {copiedCode ? (
-                  <Check size={24} weight="bold" />
+                  <Check size={20} weight="bold" />
                 ) : (
-                  <Copy size={24} weight="bold" />
+                  <Copy size={20} weight="bold" />
                 )}
               </button>
             </div>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="mt-2 text-sm text-[var(--muted)]">
               Players: {gameRoom.players.length} / 10
             </p>
           </div>
 
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
-            <p className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-4">
+            <p className="mb-2 text-sm font-medium text-[var(--muted)]">
               Share this link to invite players:
             </p>
             <div className="flex gap-2">
@@ -120,11 +128,11 @@ export default function GameLobby({
                 type="text"
                 value={roomUrl}
                 readOnly
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-black focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-50"
+                className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 text-sm text-[var(--muted)] focus:outline-none"
               />
               <button
                 onClick={copyRoomLink}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                className="rounded-lg bg-[var(--blue)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-95"
               >
                 {copied ? "✓ Copied!" : "Copy"}
               </button>
@@ -133,32 +141,32 @@ export default function GameLobby({
         </div>
 
         <div className="mb-6">
-          <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+          <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
             Players
           </h2>
           <div className="space-y-2">
             {gameRoom.players.map((player) => (
               <div
                 key={player.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800"
+                className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-3"
               >
-                <span className="text-black dark:text-zinc-50">
+                <span className="text-[var(--text)]">
                   {player.name}
                   {player.id === playerId && (
-                    <span className="ml-2 text-sm text-blue-600 dark:text-blue-400">
-                      (You)
+                    <span className="ml-2 rounded bg-[var(--blue)]/20 px-1.5 py-0.5 text-xs font-semibold text-[#5b8fff]">
+                      You
                     </span>
                   )}
                   {player.id === gameRoom.players[0]?.id && (
-                    <span className="ml-2 text-sm text-green-600 dark:text-green-400">
-                      (Host)
+                    <span className="ml-2 rounded bg-[var(--gold)]/20 px-1.5 py-0.5 text-xs font-semibold text-[var(--gold)]">
+                      Host
                     </span>
                   )}
                 </span>
                 {isHost && player.id !== playerId && onKickPlayer && (
                   <button
                     onClick={() => onKickPlayer(player.id)}
-                    className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                    className="rounded-lg bg-[var(--red)]/20 px-3 py-1 text-sm font-semibold text-[var(--red)] transition-colors hover:bg-[var(--red)]/30"
                   >
                     Kick
                   </button>
@@ -170,7 +178,7 @@ export default function GameLobby({
 
         {isHost && (
           <div className="mb-6">
-            <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+            <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
               Add Player
             </h2>
             <div className="flex gap-2">
@@ -179,14 +187,14 @@ export default function GameLobby({
                 value={newPlayerName}
                 onChange={(e) => setNewPlayerName(e.target.value)}
                 placeholder="Enter player name"
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
-                onKeyPress={(e) => {
+                className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none"
+                onKeyDown={(e) => {
                   if (e.key === "Enter") handleAddPlayer();
                 }}
               />
               <button
                 onClick={handleAddPlayer}
-                className="rounded-lg bg-green-600 px-6 py-2 font-semibold text-white transition-colors hover:bg-green-700"
+                className="rounded-xl bg-[var(--green)] px-6 py-3 font-bold text-white transition-all hover:brightness-110 active:scale-95"
               >
                 Add
               </button>
@@ -197,13 +205,13 @@ export default function GameLobby({
         {isHost && (
           <div className="space-y-4">
             {onToggleHints && (
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
-                <div className="flex items-center justify-between">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-4">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+                    <h3 className="font-semibold text-[var(--text)]">
                       Imposter Hints
                     </h3>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-[var(--muted)]">
                       {gameRoom.hintsEnabled !== false
                         ? "Hints are enabled for imposters"
                         : "Hints are disabled - imposters get no clues"}
@@ -211,10 +219,10 @@ export default function GameLobby({
                   </div>
                   <button
                     onClick={onToggleHints}
-                    className={`rounded-lg px-4 py-2 font-semibold transition-colors ${
+                    className={`rounded-lg px-4 py-2 font-bold transition-all active:scale-95 ${
                       gameRoom.hintsEnabled !== false
-                        ? "bg-green-600 text-white hover:bg-green-700"
-                        : "bg-zinc-300 text-zinc-700 hover:bg-zinc-400 dark:bg-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-500"
+                        ? "bg-[var(--green)] text-white hover:brightness-110"
+                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--border)]"
                     }`}
                   >
                     {gameRoom.hintsEnabled !== false ? "Enabled" : "Disabled"}
@@ -224,69 +232,80 @@ export default function GameLobby({
             )}
 
             <div>
-              <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+              <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
                 Select Game
               </h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setSelectedGame("dota2")}
-                  className={`rounded-lg border-2 p-4 transition-colors ${
+                  className={`rounded-xl border-2 p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg ${
                     selectedGame === "dota2"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="text-center">
-                    <div className="mb-2 text-2xl">⚔️</div>
-                    <div className="font-semibold text-black dark:text-zinc-50">
-                      Dota 2
-                    </div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Heroes
-                    </div>
+                  <div className="mb-2 text-2xl">⚔️</div>
+                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                    Dota 2
                   </div>
+                  <div className="text-sm text-[var(--muted)]">Heroes</div>
                 </button>
                 <button
                   onClick={() => setSelectedGame("clashroyale")}
-                  className={`rounded-lg border-2 p-4 transition-colors ${
+                  className={`rounded-xl border-2 p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg ${
                     selectedGame === "clashroyale"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="text-center">
-                    <div className="mb-2 text-2xl">👑</div>
-                    <div className="font-semibold text-black dark:text-zinc-50">
-                      Clash Royale
-                    </div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Cards
-                    </div>
+                  <div className="mb-2 text-2xl">👑</div>
+                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                    Clash Royale
                   </div>
+                  <div className="text-sm text-[var(--muted)]">Cards</div>
                 </button>
               </div>
             </div>
             <button
               onClick={() => onStartGame(selectedGame)}
-              disabled={gameRoom.players.length < 3}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!canStart}
+              className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Start {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} Game
               ({gameRoom.players.length} players)
             </button>
+            {!canStart && (
+              <p className="mt-2 text-center text-sm text-[var(--muted)]">
+                Need at least 3 players to start
+              </p>
+            )}
           </div>
         )}
 
         {!isHost && (
-          <p className="text-center text-zinc-600 dark:text-zinc-400">
-            Waiting for host to start the game...
-          </p>
+          <div className="flex items-center justify-center gap-2 py-4 text-[var(--muted)]">
+            <span className="inline-flex gap-1">
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                style={{ animationDelay: "300ms" }}
+              />
+            </span>
+            Waiting for host to start...
+          </div>
         )}
 
         {onLeaveRoom && (
           <button
             onClick={onLeaveRoom}
-            className="mt-4 w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            className="mt-4 w-full rounded-xl border border-[var(--border)] bg-transparent py-3 font-semibold text-[var(--muted)] transition-colors hover:border-[var(--red)] hover:bg-[var(--red)]/10 hover:text-[var(--red)]"
           >
             Leave Room
           </button>

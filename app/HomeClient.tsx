@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
-import { getUserFriendlyError, retryWithBackoff } from "./lib/errorHandler";
+import { getUserFriendlyError } from "./lib/errorHandler";
 
 export default function HomeClient() {
   const searchParams = useSearchParams();
   const roomIdFromUrl = searchParams.get("room");
+  const { showToast } = useToast();
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
   const [playerName, setPlayerName] = useState("");
@@ -53,7 +55,7 @@ export default function HomeClient() {
             // Check if current player is still in the room (might have been kicked)
             const currentPlayerId = localStorage.getItem("playerId");
             const playerStillInRoom = data.room.players.some(
-              (p: any) => p.id === currentPlayerId
+              (p: any) => p.id === currentPlayerId,
             );
 
             if (!playerStillInRoom) {
@@ -84,7 +86,7 @@ export default function HomeClient() {
       }
       return null;
     },
-    [leaveRoom]
+    [leaveRoom],
   );
 
   const joinRoom = async (roomIdOrCode: string, name?: string) => {
@@ -172,7 +174,7 @@ export default function HomeClient() {
               if (data.room) {
                 // Check if player is still in the room
                 const playerInRoom = data.room.players.some(
-                  (p: any) => p.id === currentPlayerId
+                  (p: any) => p.id === currentPlayerId,
                 );
                 if (playerInRoom) {
                   setGameRoom(data.room);
@@ -560,21 +562,26 @@ export default function HomeClient() {
     }
   };
 
+  const handleSubmit = () => {
+    if (roomIdFromUrl) joinRoom(roomIdFromUrl);
+    else if (roomCode.trim().length === 6) joinRoom(roomCode.trim());
+    else createRoom();
+  };
+
   if (!gameRoom) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-          <h1 className="mb-2 text-3xl font-bold text-center text-black dark:text-zinc-50">
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+          <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
             Imposter Game
           </h1>
-          <p className="mb-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mb-6 text-center text-sm text-[var(--muted)]">
             Play with Dota 2 Heroes or Clash Royale Cards
           </p>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700 dark:bg-red-900/20 dark:text-red-400">
-              <p className="font-medium">Error</p>
-              <p className="text-sm">{error}</p>
+            <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
@@ -586,7 +593,7 @@ export default function HomeClient() {
 
           <div className="space-y-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label className="mb-2 block text-sm font-medium text-[var(--text)]">
                 Your Name
               </label>
               <input
@@ -594,26 +601,28 @@ export default function HomeClient() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !isLoading) {
-                    if (roomCode.trim()) {
-                      joinRoom(roomCode.trim());
-                    } else if (roomIdFromUrl) {
-                      joinRoom(roomIdFromUrl);
-                    } else {
-                      createRoom();
-                    }
-                  }
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isLoading) handleSubmit();
                 }}
                 disabled={isLoading}
               />
             </div>
 
-            {!roomIdFromUrl && (
+            {roomIdFromUrl ? (
+              <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
+                <p className="mb-2 text-sm font-medium text-[var(--green)]">
+                  Invite link detected
+                </p>
+                <p className="text-xs text-[var(--muted)]">
+                  Room: {roomIdFromUrl.toUpperCase()}
+                </p>
+              </div>
+            ) : (
               <div>
-                <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Room Code (Optional)
+                <label className="mb-2 block text-sm font-medium text-[var(--text)]">
+                  Room Code{" "}
+                  <span className="text-[var(--muted)]">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -623,15 +632,15 @@ export default function HomeClient() {
                       e.target.value
                         .toUpperCase()
                         .replace(/[^A-Z0-9]/g, "")
-                        .slice(0, 6)
+                        .slice(0, 6),
                     )
                   }
                   placeholder="Enter 6-digit code"
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-center text-2xl font-bold tracking-widest text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-['Rajdhani'] text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
                   maxLength={6}
                   disabled={isLoading}
                 />
-                <p className="mt-1 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
                   Leave empty to create a new room
                 </p>
               </div>
@@ -641,17 +650,15 @@ export default function HomeClient() {
               <button
                 onClick={() => joinRoom(roomIdFromUrl)}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "Joining..." : "Join Room"}
               </button>
-            ) : roomCode.trim() ? (
+            ) : roomCode.trim().length === 6 ? (
               <button
                 onClick={() => joinRoom(roomCode.trim())}
-                disabled={
-                  isLoading || !playerName.trim() || roomCode.length !== 6
-                }
-                className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading || !playerName.trim()}
+                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "Joining..." : "Join Room"}
               </button>
@@ -659,7 +666,7 @@ export default function HomeClient() {
               <button
                 onClick={createRoom}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "Creating..." : "Create Room"}
               </button>
@@ -678,7 +685,10 @@ export default function HomeClient() {
         playerName={playerName}
         onAddPlayer={addPlayer}
         onStartGame={startGame}
-        onLeaveRoom={leaveRoom}
+        onLeaveRoom={() => {
+          showToast("Left the room");
+          leaveRoom();
+        }}
         onToggleHints={toggleHints}
         onKickPlayer={kickPlayer}
       />

@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { ToastProvider } from "./components/ToastContext";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Imposter Game",
@@ -26,10 +16,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+      <body className="antialiased">
+        <ToastProvider>
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--blue)]" />
+                  <p className="text-[var(--muted)]">Loading...</p>
+                </div>
+              </div>
+            }
+          >
+            {children}
+          </Suspense>
+        </ToastProvider>
       </body>
     </html>
   );

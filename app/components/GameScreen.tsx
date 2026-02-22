@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useToast } from "./ToastContext";
 import { GameRoom } from "../types";
 
 interface GameScreenProps {
@@ -27,6 +28,7 @@ export default function GameScreen({
   onLeaveRoom,
 }: GameScreenProps) {
   const [clue, setClue] = useState("");
+  const { showToast } = useToast();
   const VOTING_DURATION = 60; // 60 seconds
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,19 +79,19 @@ export default function GameScreen({
 
   if (gameRoom.gameState === "playing") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
-        <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-          <h1 className="mb-6 text-3xl font-bold text-center text-black dark:text-zinc-50">
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-white">
             Round {gameRoom.round}
           </h1>
 
-          <div className="mb-6 rounded-lg border-2 border-blue-500 bg-blue-50 p-4 dark:bg-blue-900/20">
+          <div className={`mb-6 rounded-2xl border-2 p-6 ${isImposter ? "border-[var(--red)] bg-[#0d1220] shadow-[0_0_32px_rgba(239,68,68,0.35)]" : "border-[var(--green)] bg-[#0d1220] shadow-[0_0_32px_rgba(34,197,94,0.3)]"}`}>
             {isImposter ? (
               <div>
-                <h2 className="mb-2 text-xl font-semibold text-red-600 dark:text-red-400">
+                <h2 className="mb-2 text-xl font-bold text-[var(--red)]">
                   🎭 You are the IMPOSTER!
                 </h2>
-                <p className="mb-3 text-zinc-700 dark:text-zinc-300">
+                <p className="mb-3 text-[var(--text)]/90">
                   You don't know the secret{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"}. Try
                   to blend in by giving a clue that could apply to any{" "}
@@ -101,11 +103,11 @@ export default function GameScreen({
                 {gameRoom.hintsEnabled !== false &&
                   gameRoom.hints &&
                   gameRoom.hints.length > 0 && (
-                    <div className="mt-3 rounded-lg bg-yellow-100 p-3 dark:bg-yellow-900/20">
-                      <p className="mb-2 text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                    <div className="mt-3 rounded-xl bg-black/30 p-4">
+                      <p className="mb-2 text-sm font-semibold text-[var(--gold)]">
                         💡 Hints to help you blend in:
                       </p>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
+                      <ul className="space-y-1 text-sm text-[var(--gold)]">
                         {gameRoom.hints.map((hint, idx) => (
                           <li key={idx}>
                             <span className="font-medium">{hint.type}:</span>{" "}
@@ -116,8 +118,8 @@ export default function GameScreen({
                     </div>
                   )}
                 {gameRoom.hintsEnabled === false && (
-                  <div className="mt-3 rounded-lg bg-red-100 p-3 dark:bg-red-900/20">
-                    <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                  <div className="mt-3 rounded-xl bg-[var(--red)]/10 border border-[var(--red)]/30 p-3">
+                    <p className="text-sm font-semibold text-[var(--red)]">
                       ⚠️ Hints are disabled - you have no clues about the secret{" "}
                       {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
                     </p>
@@ -126,7 +128,7 @@ export default function GameScreen({
               </div>
             ) : (
               <div>
-                <h2 className="mb-2 text-xl font-semibold text-green-600 dark:text-green-400">
+                <h2 className="mb-2 text-xl font-bold text-[var(--green)]">
                   ✅ You know the{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
                 </h2>
@@ -136,11 +138,11 @@ export default function GameScreen({
                       <img
                         src={gameRoom.currentCard.iconUrls.medium}
                         alt={gameRoom.currentCard.name}
-                        className="h-20 w-20 rounded-lg object-cover"
+                        className="h-20 w-20 rounded-xl object-cover border border-[var(--border)]"
                       />
                     )}
                   <div>
-                    <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                    <p className="text-lg font-bold text-[var(--text)]">
                       Secret{" "}
                       {gameRoom.gameType === "clashroyale" ? "Card" : "Hero"}:{" "}
                       {gameRoom.gameType === "clashroyale"
@@ -149,7 +151,7 @@ export default function GameScreen({
                     </p>
                     {gameRoom.gameType === "clashroyale" &&
                       gameRoom.currentCard && (
-                        <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <div className="mt-1 text-sm text-[var(--muted)]">
                           <span className="font-medium">Elixir Cost:</span>{" "}
                           {gameRoom.currentCard.elixirCost} |{" "}
                           {gameRoom.currentCard.rarity && (
@@ -162,7 +164,7 @@ export default function GameScreen({
                       )}
                   </div>
                 </div>
-                <p className="text-zinc-700 dark:text-zinc-300">
+                <p className="text-[var(--text)]/90">
                   Give a clue about this{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"}{" "}
                   without being too obvious. Try to identify the imposter!
@@ -173,44 +175,55 @@ export default function GameScreen({
 
           {!hasSubmittedClue ? (
             <div className="mb-6">
-              <label className="block mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label className="mb-2 block text-sm font-medium text-[var(--muted)]">
                 Your Clue
               </label>
               <textarea
                 value={clue}
                 onChange={(e) => setClue(e.target.value)}
-                placeholder="Enter your clue about the hero..."
+                placeholder={`Enter your clue about the ${gameRoom.gameType === "clashroyale" ? "card" : "hero"}...`}
                 rows={4}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-black focus:border-blue-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
               />
               <button
                 onClick={() => {
                   if (clue.trim()) {
                     onSubmitClue(clue.trim());
                     setClue("");
+                    showToast("Clue submitted!");
                   }
                 }}
-                className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+                className="mt-4 w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
               >
                 Submit Clue
               </button>
             </div>
           ) : (
-            <div className="mb-6 rounded-lg border border-green-500 bg-green-50 p-4 dark:bg-green-900/20">
-              <p className="text-green-700 dark:text-green-300">
+            <div className="mb-6 rounded-xl border border-[var(--green)] bg-[var(--green)]/10 p-4">
+              <p className="font-semibold text-[var(--green)]">
                 ✅ You submitted: "{currentPlayer.clue}"
               </p>
-              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                Waiting for other players to submit their clues...
+              <p className="mt-2 flex items-center gap-2 text-sm text-[var(--muted)]">
+                <span className="inline-flex gap-0.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "300ms" }} />
+                </span>
+                Waiting for other players...
               </p>
             </div>
           )}
 
           <div className="mb-4">
-            <h3 className="mb-2 text-lg font-semibold text-black dark:text-zinc-50">
-              Submitted Clues ({gameRoom.clues.length} /{" "}
-              {gameRoom.players.length})
+            <h3 className="mb-2 font-['Rajdhani'] font-bold tracking-wide text-[var(--text)]">
+              Submitted Clues ({gameRoom.clues.length} / {gameRoom.players.length})
             </h3>
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface2)]">
+              <div
+                className="h-full rounded-full bg-[var(--blue)] transition-all duration-500"
+                style={{ width: `${(gameRoom.clues.length / gameRoom.players.length) * 100}%` }}
+              />
+            </div>
             <div className="space-y-2">
               {gameRoom.clues.map((clueData) => {
                 const player = gameRoom.players.find(
@@ -219,14 +232,19 @@ export default function GameScreen({
                 return (
                   <div
                     key={clueData.playerId}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-3"
                   >
-                    <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                      {player?.name}:
-                    </p>
-                    <p className="text-black dark:text-zinc-50">
-                      "{clueData.clue}"
-                    </p>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--blue)] to-purple-600 font-bold text-sm text-white">
+                      {player?.name?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[var(--text)]">
+                        {player?.name}
+                      </p>
+                      <p className="text-sm text-[var(--muted)]">
+                        "{clueData.clue}"
+                      </p>
+                    </div>
                   </div>
                 );
               })}
@@ -237,7 +255,7 @@ export default function GameScreen({
             <div className="mt-6">
               <button
                 onClick={onSkipPhase}
-                className="w-full rounded-lg border-2 border-orange-500 bg-orange-50 px-4 py-3 font-semibold text-orange-700 transition-colors hover:bg-orange-100 dark:border-orange-400 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30"
+                className="w-full rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/10 px-4 py-3 font-semibold text-[var(--gold)] transition-colors hover:bg-[var(--gold)]/20"
               >
                 ⏭️ Skip to Voting ({gameRoom.clues.length} clues submitted)
               </button>
@@ -250,26 +268,26 @@ export default function GameScreen({
 
   if (gameRoom.gameState === "voting") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
-        <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
           <div className="mb-6 text-center">
-            <h1 className="mb-2 text-3xl font-bold text-black dark:text-zinc-50">
+            <h1 className="mb-2 font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h1>
             {timeRemaining !== null && (
               <div className="mt-4">
                 <div
-                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full text-3xl font-bold ${
+                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full font-['Rajdhani'] text-3xl font-bold ${
                     timeRemaining <= 10
-                      ? "bg-red-500 text-white"
+                      ? "bg-[var(--red)] text-white"
                       : timeRemaining <= 30
-                      ? "bg-orange-500 text-white"
-                      : "bg-blue-500 text-white"
+                      ? "bg-[var(--gold)] text-white"
+                      : "bg-[var(--blue)] text-white"
                   }`}
                 >
                   {timeRemaining}
                 </div>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mt-2 text-sm text-[var(--muted)]">
                   {timeRemaining > 0
                     ? "Time remaining to vote"
                     : "Time's up! Results will be shown soon..."}
@@ -279,7 +297,7 @@ export default function GameScreen({
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h2>
             <div className="space-y-3">
@@ -290,26 +308,31 @@ export default function GameScreen({
                 return (
                   <div
                     key={player.id}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800"
+                    className="rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-4"
                   >
-                    <div className="mb-2">
-                      <p className="font-semibold text-black dark:text-zinc-50">
-                        {player.name}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--blue)] to-purple-600 font-bold text-white">
+                        {player.name[0]?.toUpperCase() ?? "?"}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-[var(--text)]">
+                          {player.name}
+                        </p>
+                        {clueData ? (
+                          <p className="text-sm text-[var(--muted)]">
+                            "{clueData.clue}"
+                          </p>
+                        ) : (
+                          <p className="text-sm italic text-[var(--muted)]">
+                            No clue submitted
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    {clueData ? (
-                      <p className="text-zinc-700 dark:text-zinc-300">
-                        "{clueData.clue}"
-                      </p>
-                    ) : (
-                      <p className="text-sm italic text-zinc-500 dark:text-zinc-400">
-                        No clue submitted
-                      </p>
-                    )}
                     {!hasVoted && (
                       <button
                         onClick={() => onVote(player.id)}
-                        className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                        className="mt-3 w-full rounded-lg bg-[var(--red)]/20 px-4 py-2 text-sm font-semibold text-[var(--red)] transition-colors hover:bg-[var(--red)]/30"
                       >
                         Vote as Imposter
                       </button>
@@ -319,7 +342,7 @@ export default function GameScreen({
                         (v) =>
                           v.voterId === playerId && v.targetId === player.id
                       ) && (
-                        <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                        <p className="mt-2 text-sm font-semibold text-[var(--green)]">
                           ✓ You voted for {player.name}
                         </p>
                       )}
@@ -330,7 +353,7 @@ export default function GameScreen({
           </div>
 
           {hasVoted && (
-            <p className="mb-4 text-center text-zinc-600 dark:text-zinc-400">
+            <p className="mb-4 text-center text-[var(--muted)]">
               You've voted! Waiting for other players or timer to end...
             </p>
           )}
@@ -339,7 +362,7 @@ export default function GameScreen({
             <div className="mt-6">
               <button
                 onClick={onSkipPhase}
-                className="w-full rounded-lg border-2 border-orange-500 bg-orange-50 px-4 py-3 font-semibold text-orange-700 transition-colors hover:bg-orange-100 dark:border-orange-400 dark:bg-orange-900/20 dark:text-orange-300 dark:hover:bg-orange-900/30"
+                className="w-full rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/10 px-4 py-3 font-semibold text-[var(--gold)] transition-colors hover:bg-[var(--gold)]/20"
               >
                 ⏭️ End Voting & Show Results
               </button>
@@ -374,24 +397,24 @@ export default function GameScreen({
     }));
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
-        <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-lg dark:bg-zinc-900">
-          <h1 className="mb-6 text-3xl font-bold text-center text-black dark:text-zinc-50">
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
             Game Over!
           </h1>
 
-          <div className="mb-6 rounded-lg border-2 p-4 bg-zinc-50 dark:bg-zinc-800">
+          <div className="mb-6 rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-6">
             <div className="mb-2 flex items-center gap-4">
-              {gameRoom.gameType === "clashroyale" &&
+                {gameRoom.gameType === "clashroyale" &&
                 gameRoom.currentCard?.iconUrls?.medium && (
                   <img
                     src={gameRoom.currentCard.iconUrls.medium}
                     alt={gameRoom.currentCard.name}
-                    className="h-24 w-24 rounded-lg object-cover"
+                    className="h-24 w-24 rounded-xl object-cover border border-[var(--border)]"
                   />
                 )}
               <div>
-                <p className="text-lg font-semibold text-black dark:text-zinc-50">
+                <p className="text-lg font-semibold text-[var(--text)]">
                   The secret{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"} was:{" "}
                   {gameRoom.gameType === "clashroyale"
@@ -400,22 +423,22 @@ export default function GameScreen({
                 </p>
               </div>
             </div>
-            <p className="mb-4 text-lg font-semibold text-black dark:text-zinc-50">
+            <p className="mb-4 text-lg font-semibold text-[var(--text)]">
               {votedOutPlayer?.name} was voted out!
             </p>
             {wasImposter ? (
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-xl font-bold text-[var(--green)]">
                 ✅ Correct! They were the imposter!
               </p>
             ) : (
-              <p className="text-xl font-bold text-red-600 dark:text-red-400">
+              <p className="text-xl font-bold text-[var(--red)]">
                 ❌ Wrong! They were not the imposter!
               </p>
             )}
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
+            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
               Voting Results
             </h2>
             <div className="space-y-2">
@@ -436,18 +459,18 @@ export default function GameScreen({
                   }) => (
                     <div
                       key={player.id}
-                      className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-3"
                     >
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold text-black dark:text-zinc-50">
+                        <p className="font-semibold text-[var(--text)]">
                           {player.name}
                           {player.isImposter && (
-                            <span className="ml-2 text-red-600 dark:text-red-400">
+                            <span className="ml-2 text-[var(--red)]">
                               🎭 Imposter
                             </span>
                           )}
                         </p>
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                        <p className="text-sm font-medium text-[var(--muted)]">
                           {votes} vote{votes !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -462,7 +485,7 @@ export default function GameScreen({
               {onNextRound && (
                 <button
                   onClick={onNextRound}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+                  className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
                 >
                   Next Round
                 </button>
@@ -470,14 +493,14 @@ export default function GameScreen({
               {onResetGame && (
                 <button
                   onClick={onResetGame}
-                  className="w-full rounded-lg border-2 border-zinc-300 bg-white px-4 py-3 font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="w-full rounded-xl border border-[var(--border)] bg-transparent py-3 font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
                 >
                   Go Home
                 </button>
               )}
             </div>
           ) : (
-            <p className="text-center text-zinc-600 dark:text-zinc-400">
+            <p className="text-center text-[var(--muted)]">
               Waiting for host to start next round or end the game...
             </p>
           )}
