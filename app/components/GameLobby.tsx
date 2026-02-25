@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
 import { useToast } from "./ToastContext";
-import { GameRoom, GameType } from "../types";
+import { GameRoom, GameType, GameFormat } from "../types";
 
 interface GameLobbyProps {
   gameRoom: GameRoom;
@@ -12,6 +12,7 @@ interface GameLobbyProps {
   onAddPlayer: (name: string) => void;
   onStartGame: (gameType: GameType) => void;
   onStartHeadsUp?: (gameType: GameType) => void;
+  onStartHeadsUpOnline?: (gameType: GameType) => void;
   onLeaveRoom?: () => void;
   onToggleHints?: () => void;
   onKickPlayer?: (playerId: string) => void;
@@ -26,6 +27,7 @@ export default function GameLobby({
   onAddPlayer,
   onStartGame,
   onStartHeadsUp,
+  onStartHeadsUpOnline,
   onLeaveRoom,
   onToggleHints,
   onKickPlayer,
@@ -36,7 +38,7 @@ export default function GameLobby({
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [selectedGame, setSelectedGame] = useState<GameType>("dota2");
-  const [gameFormat, setGameFormat] = useState<"imposter" | "headsup">("imposter");
+  const [gameFormat, setGameFormat] = useState<GameFormat>("imposter");
   const { showToast } = useToast();
 
   const isHost = gameRoom.players[0]?.id === playerId;
@@ -91,7 +93,9 @@ export default function GameLobby({
     }
   };
 
-  const canStart = gameRoom.players.length >= 3;
+  const minPlayers =
+    gameFormat === "headsup_online" ? 2 : 3;
+  const canStart = gameRoom.players.length >= minPlayers;
 
   return (
     <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
@@ -223,7 +227,7 @@ export default function GameLobby({
               <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
                 Game Format
               </h2>
-              <div className="mb-4 grid grid-cols-2 gap-3">
+              <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <button
                   onClick={() => setGameFormat("imposter")}
                   className={`rounded-xl border-2 p-4 text-center transition-all ${
@@ -254,6 +258,22 @@ export default function GameLobby({
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Turn phone around · Ask questions
+                  </div>
+                </button>
+                <button
+                  onClick={() => setGameFormat("headsup_online")}
+                  className={`rounded-xl border-2 p-4 text-center transition-all ${
+                    gameFormat === "headsup_online"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)]"
+                  }`}
+                >
+                  <div className="mb-1 text-2xl">🌐</div>
+                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                    Online
+                  </div>
+                  <div className="text-xs text-[var(--muted)]">
+                    Each device · See others&apos; cards
                   </div>
                 </button>
               </div>
@@ -336,6 +356,21 @@ export default function GameLobby({
                   <>Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
+            ) : gameFormat === "headsup_online" && onStartHeadsUpOnline ? (
+              <button
+                onClick={() => onStartHeadsUpOnline(selectedGame)}
+                disabled={!canStart || isStarting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isStarting ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Starting...
+                  </>
+                ) : (
+                  <>Start Online · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                )}
+              </button>
             ) : (
               <button
                 onClick={() => onStartGame(selectedGame)}
@@ -354,7 +389,7 @@ export default function GameLobby({
             )}
             {!canStart && (
               <p className="mt-2 text-center text-sm text-[var(--muted)]">
-                Need at least 3 players to start
+                Need at least {minPlayers} players to start
               </p>
             )}
           </div>

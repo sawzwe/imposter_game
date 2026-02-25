@@ -281,6 +281,220 @@ export async function PATCH(
       }
     }
 
+    // Heads Up Online: each player gets unique card, sees others' cards but not their own
+    if (action === "startHeadsUpOnline") {
+      if (room.players.length < 2) {
+        return NextResponse.json(
+          { error: "Need at least 2 players" },
+          { status: 400 }
+        );
+      }
+
+      const selectedGameType: GameType = gameType || "dota2";
+      const numPlayers = room.players.length;
+
+      if (selectedGameType === "dota2") {
+        const heroesResponse = await fetch(
+          `${request.nextUrl.origin}/api/heroes`
+        );
+        if (!heroesResponse.ok) {
+          throw new Error("Failed to fetch Dota 2 heroes");
+        }
+        const heroesData = await heroesResponse.json();
+        const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+        if (heroes.length < numPlayers) {
+          throw new Error("Not enough heroes for all players");
+        }
+
+        const shuffled = [...heroes].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const getHeroImageUrl = (h: Hero) => {
+          const shortName = h.name.replace("npc_dota_hero_", "");
+          return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`;
+        };
+
+        const updatedPlayers = room.players.map((player, index) => {
+          const hero = assigned[index];
+          return {
+            ...player,
+            isImposter: false,
+            hero: undefined,
+            card: undefined,
+            assignedCardId: String(hero.id),
+            assignedCardName: hero.name_english_loc || hero.name,
+            assignedCardImage: getHeroImageUrl(hero),
+            score: 0,
+            hasSubmittedClue: false,
+            clue: undefined,
+          };
+        });
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup_online",
+          gameState: "playing",
+          round: 1,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
+
+      if (selectedGameType === "clashroyale") {
+        const cardsResponse = await fetch(
+          `${request.nextUrl.origin}/api/clash-royale/cards`
+        );
+        if (!cardsResponse.ok) {
+          const errorData = await cardsResponse.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || "Failed to fetch Clash Royale cards"
+          );
+        }
+        const cardsData = await cardsResponse.json();
+        const cards: ClashRoyaleCard[] = cardsData.items || [];
+        if (cards.length < numPlayers) {
+          throw new Error("Not enough cards for all players");
+        }
+
+        const shuffled = [...cards].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const updatedPlayers = room.players.map((player, index) => {
+          const card = assigned[index];
+          return {
+            ...player,
+            isImposter: false,
+            hero: undefined,
+            card: undefined,
+            assignedCardId: String(card.id),
+            assignedCardName: card.name,
+            assignedCardImage: card.iconUrls?.medium,
+            score: 0,
+            hasSubmittedClue: false,
+            clue: undefined,
+          };
+        });
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup_online",
+          gameState: "playing",
+          round: 1,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
+    }
+
+    // Rotate card for a player (assign new card, increment score) — for headsup_online
+    if (action === "rotateCard") {
+      if (!targetPlayerId || !playerId) {
+        return NextResponse.json(
+          { error: "targetPlayerId and playerId are required" },
+          { status: 400 }
+        );
+      }
+
+      if (room.gameFormat !== "headsup_online" || room.gameState !== "playing") {
+        return NextResponse.json(
+          { error: "Rotate card only valid during headsup_online play" },
+          { status: 400 }
+        );
+      }
+
+      const targetPlayer = room.players.find((p) => p.id === targetPlayerId);
+      if (!targetPlayer) {
+        return NextResponse.json(
+          { error: "Target player not found" },
+          { status: 404 }
+        );
+      }
+
+      // Cannot mark your own card correct (you don't know it)
+      if (targetPlayerId === playerId) {
+        return NextResponse.json(
+          { error: "Cannot mark your own card" },
+          { status: 400 }
+        );
+      }
+
+      const selectedGameType: GameType = room.gameType || "dota2";
+      // Exclude all other players' cards (target's current card is being replaced)
+      const usedIds = new Set<string>();
+      for (const p of room.players) {
+        if (p.assignedCardId) usedIds.add(p.assignedCardId);
+      }
+
+      const pickNewCard = async (): Promise<{
+        id: string;
+        name: string;
+        image?: string;
+      }> => {
+        if (selectedGameType === "dota2") {
+          const heroesResponse = await fetch(
+            `${request.nextUrl.origin}/api/heroes`
+          );
+          if (!heroesResponse.ok) throw new Error("Failed to fetch heroes");
+          const heroesData = await heroesResponse.json();
+          const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+          const available = heroes.filter(
+            (h) => !usedIds.has(String(h.id))
+          );
+          if (available.length === 0) return { id: "", name: "" };
+          const picked = available[Math.floor(Math.random() * available.length)];
+          const shortName = picked.name.replace("npc_dota_hero_", "");
+          return {
+            id: String(picked.id),
+            name: picked.name_english_loc || picked.name,
+            image: `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`,
+          };
+        } else {
+          const cardsResponse = await fetch(
+            `${request.nextUrl.origin}/api/clash-royale/cards`
+          );
+          if (!cardsResponse.ok) throw new Error("Failed to fetch cards");
+          const cardsData = await cardsResponse.json();
+          const cards: ClashRoyaleCard[] = cardsData.items || [];
+          const available = cards.filter((c) => !usedIds.has(String(c.id)));
+          if (available.length === 0) return { id: "", name: "" };
+          const picked = available[Math.floor(Math.random() * available.length)];
+          return {
+            id: String(picked.id),
+            name: picked.name,
+            image: picked.iconUrls?.medium,
+          };
+        }
+      };
+
+      const newCard = await pickNewCard();
+      if (!newCard.id) {
+        return NextResponse.json(
+          { error: "No more unique cards available" },
+          { status: 400 }
+        );
+      }
+
+      const updatedPlayers = room.players.map((p) => {
+        if (p.id !== targetPlayerId) return p;
+        return {
+          ...p,
+          assignedCardId: newCard.id,
+          assignedCardName: newCard.name,
+          assignedCardImage: newCard.image,
+          score: (p.score || 0) + 1,
+        };
+      });
+
+      const updatedRoom = await updateRoom(roomId, { players: updatedPlayers });
+      return NextResponse.json({ room: updatedRoom });
+    }
+
     if (action === "submitClue") {
       if (!playerId || !clue) {
         return NextResponse.json(
@@ -652,15 +866,21 @@ export async function PATCH(
         clues: [],
         votes: [],
         votingStartTime: undefined,
+        headsupCountdownEnd: undefined,
         currentHero: undefined,
         currentCard: undefined,
         gameType: undefined,
+        gameFormat: undefined,
         hints: undefined,
         players: room.players.map((p) => ({
           ...p,
           isImposter: false,
           hero: undefined,
           card: undefined,
+          assignedCardId: undefined,
+          assignedCardName: undefined,
+          assignedCardImage: undefined,
+          score: undefined,
           clue: undefined,
           hasSubmittedClue: false,
         })),
