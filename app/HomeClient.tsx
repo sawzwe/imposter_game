@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
+import HeadsUpScreen from "./components/HeadsUpScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
@@ -15,6 +16,8 @@ export default function HomeClient() {
   const { showToast } = useToast();
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
+  const [showHeadsUp, setShowHeadsUp] = useState(false);
+  const [showGameSelect, setShowGameSelect] = useState(true);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -568,10 +571,77 @@ export default function HomeClient() {
     else createRoom();
   };
 
+  // Heads Up - single device game
+  if (showHeadsUp) {
+    return (
+      <HeadsUpScreen
+        onBack={() => {
+          setShowHeadsUp(false);
+          setShowGameSelect(true);
+        }}
+      />
+    );
+  }
+
+  // Game mode selector - when no room and no invite link
+  if (showGameSelect && !gameRoom && !roomIdFromUrl) {
+    return (
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+        <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+          Imposter Game
+        </h1>
+        <p className="mb-8 text-center text-sm text-[var(--muted)]">
+          Play with Dota 2 Heroes or Clash Royale Cards
+        </p>
+        <div className="grid w-full max-w-md grid-cols-2 gap-6">
+          <button
+            onClick={() => setShowGameSelect(false)}
+            className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+          >
+            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+              🎭
+            </span>
+            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+              Imposter
+            </span>
+            <span className="mt-1 text-sm text-[var(--muted)]">
+              Multiplayer · Find the imposter
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setShowGameSelect(false);
+              setShowHeadsUp(true);
+            }}
+            className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+          >
+            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+              👆
+            </span>
+            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+              Heads Up
+            </span>
+            <span className="mt-1 text-sm text-[var(--muted)]">
+              Single device · Ask questions
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!gameRoom) {
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+          {!roomIdFromUrl && (
+            <button
+              onClick={() => setShowGameSelect(true)}
+              className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+            >
+              ← Back
+            </button>
+          )}
           <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
             Imposter Game
           </h1>
