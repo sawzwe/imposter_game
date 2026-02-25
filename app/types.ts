@@ -38,18 +38,28 @@ export interface Player {
   hasSubmittedClue: boolean;
 }
 
+export type GameFormat = "imposter" | "headsup";
+
 export interface GameRoom {
   id: string;
   players: Player[];
   currentHero?: Hero;
   currentCard?: ClashRoyaleCard;
   gameType?: GameType;
+  gameFormat?: GameFormat;
   hints?: GameHint[];
   hintsEnabled?: boolean; // Whether hints are enabled for imposters
-  gameState: "lobby" | "playing" | "voting" | "finished";
+  gameState:
+    | "lobby"
+    | "playing"
+    | "voting"
+    | "finished"
+    | "headsup_countdown"
+    | "headsup_playing";
   round: number;
   clues: { playerId: string; clue: string }[];
   votes: { voterId: string; targetId: string }[];
   votingStartTime?: number; // Timestamp when voting phase started
+  headsupCountdownEnd?: number; // Timestamp when countdown finishes
   lastUpdated?: number; // Timestamp of last update for efficient polling
 }

@@ -11,6 +11,7 @@ interface GameLobbyProps {
   playerName: string;
   onAddPlayer: (name: string) => void;
   onStartGame: (gameType: GameType) => void;
+  onStartHeadsUp?: (gameType: GameType) => void;
   onLeaveRoom?: () => void;
   onToggleHints?: () => void;
   onKickPlayer?: (playerId: string) => void;
@@ -22,6 +23,7 @@ export default function GameLobby({
   playerName,
   onAddPlayer,
   onStartGame,
+  onStartHeadsUp,
   onLeaveRoom,
   onToggleHints,
   onKickPlayer,
@@ -30,6 +32,7 @@ export default function GameLobby({
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [selectedGame, setSelectedGame] = useState<GameType>("dota2");
+  const [gameFormat, setGameFormat] = useState<"imposter" | "headsup">("imposter");
   const { showToast } = useToast();
 
   const isHost = gameRoom.players[0]?.id === playerId;
@@ -204,7 +207,47 @@ export default function GameLobby({
 
         {isHost && (
           <div className="space-y-4">
-            {onToggleHints && (
+            <div>
+              <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
+                Game Format
+              </h2>
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setGameFormat("imposter")}
+                  className={`rounded-xl border-2 p-4 text-center transition-all ${
+                    gameFormat === "imposter"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)]"
+                  }`}
+                >
+                  <div className="mb-1 text-2xl">🎭</div>
+                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                    Imposter
+                  </div>
+                  <div className="text-xs text-[var(--muted)]">
+                    Find the imposter
+                  </div>
+                </button>
+                <button
+                  onClick={() => setGameFormat("headsup")}
+                  className={`rounded-xl border-2 p-4 text-center transition-all ${
+                    gameFormat === "headsup"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)]"
+                  }`}
+                >
+                  <div className="mb-1 text-2xl">👆</div>
+                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                    Heads Up
+                  </div>
+                  <div className="text-xs text-[var(--muted)]">
+                    Turn phone around · Ask questions
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {gameFormat === "imposter" && onToggleHints && (
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -266,14 +309,23 @@ export default function GameLobby({
                 </button>
               </div>
             </div>
-            <button
-              onClick={() => onStartGame(selectedGame)}
-              disabled={!canStart}
-              className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Start {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} Game
-              ({gameRoom.players.length} players)
-            </button>
+            {gameFormat === "headsup" && onStartHeadsUp ? (
+              <button
+                onClick={() => onStartHeadsUp(selectedGame)}
+                disabled={!canStart}
+                className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)
+              </button>
+            ) : (
+              <button
+                onClick={() => onStartGame(selectedGame)}
+                disabled={!canStart}
+                className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Start Imposter · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)
+              </button>
+            )}
             {!canStart && (
               <p className="mt-2 text-center text-sm text-[var(--muted)]">
                 Need at least 3 players to start

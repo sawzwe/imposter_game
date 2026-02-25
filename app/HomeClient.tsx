@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
+import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
@@ -375,6 +376,45 @@ export default function HomeClient() {
     }
   };
 
+  const startHeadsUp = async (gameType: "dota2" | "clashroyale") => {
+    if (!gameRoom || gameRoom.players.length < 3) {
+      setError("You need at least 3 players to start!");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "startHeadsUp",
+          gameType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to start Heads Up");
+      }
+
+      if (data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
+        setGameRoom(data.room);
+      }
+    } catch (error: any) {
+      console.error("Error starting Heads Up:", error);
+      setError(error.message || "Failed to start Heads Up");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const submitClue = async (clue: string) => {
     if (!gameRoom) return;
 
@@ -731,6 +771,22 @@ export default function HomeClient() {
     );
   }
 
+  if (
+    gameRoom.gameState === "headsup_countdown" ||
+    gameRoom.gameState === "headsup_playing"
+  ) {
+    return (
+      <HeadsUpMultiScreen
+        gameRoom={gameRoom}
+        playerId={playerId}
+        onLeaveRoom={() => {
+          showToast("Left the room");
+          leaveRoom();
+        }}
+      />
+    );
+  }
+
   if (gameRoom.gameState === "lobby") {
     return (
       <GameLobby
@@ -739,6 +795,7 @@ export default function HomeClient() {
         playerName={playerName}
         onAddPlayer={addPlayer}
         onStartGame={startGame}
+        onStartHeadsUp={startHeadsUp}
         onLeaveRoom={() => {
           showToast("Left the room");
           leaveRoom();
