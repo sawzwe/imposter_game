@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
 import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
+import HeadsUpOnline from "./components/HeadsUpOnline";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
 import { getUserFriendlyError } from "./lib/errorHandler";
@@ -231,6 +232,13 @@ export default function HomeClient() {
     // Determine polling interval based on game state
     // More frequent during active gameplay, less frequent in lobby/finished
     const getPollInterval = () => {
+      // Online Heads Up: 2 seconds for real-time sync
+      if (
+        gameRoom.gameFormat === "headsup_online" &&
+        gameRoom.gameState === "playing"
+      ) {
+        return 2000;
+      }
       if (gameRoom.gameState === "playing" || gameRoom.gameState === "voting") {
         return 5000; // 5 seconds during active gameplay
       }
@@ -256,7 +264,12 @@ export default function HomeClient() {
     }, getPollInterval());
 
     return () => clearInterval(pollInterval);
-  }, [gameRoom?.id, gameRoom?.gameState, fetchRoomState]);
+  }, [
+    gameRoom?.id,
+    gameRoom?.gameState,
+    gameRoom?.gameFormat,
+    fetchRoomState,
+  ]);
 
   const createRoom = async () => {
     if (!playerName.trim()) {
@@ -374,6 +387,71 @@ export default function HomeClient() {
       setError(error.message || "Failed to start game");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startHeadsUpOnline = async (gameType: "dota2" | "clashroyale") => {
+    if (!gameRoom || gameRoom.players.length < 2) {
+      setError("You need at least 2 players to start!");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "startHeadsUpOnline",
+          gameType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to start Online Heads Up");
+      }
+
+      if (data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
+        setGameRoom(data.room);
+      }
+    } catch (error: any) {
+      console.error("Error starting Online Heads Up:", error);
+      setError(error.message || "Failed to start Online Heads Up");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const rotateCard = async (targetPlayerId: string) => {
+    if (!gameRoom) return;
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "rotateCard",
+          playerId,
+          targetPlayerId,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
+        setGameRoom(data.room);
+      }
+    } catch (error) {
+      console.error("Error rotating card:", error);
     }
   };
 
@@ -803,6 +881,23 @@ export default function HomeClient() {
     );
   }
 
+  if (
+    gameRoom.gameFormat === "headsup_online" &&
+    gameRoom.gameState === "playing"
+  ) {
+    return (
+      <HeadsUpOnline
+        gameRoom={gameRoom}
+        localPlayerId={playerId}
+        onRotateCard={rotateCard}
+        onLeaveRoom={() => {
+          showToast("Left the room");
+          leaveRoom();
+        }}
+      />
+    );
+  }
+
   if (gameRoom.gameState === "lobby") {
     return (
       <GameLobby
@@ -812,6 +907,7 @@ export default function HomeClient() {
         onAddPlayer={addPlayer}
         onStartGame={startGame}
         onStartHeadsUp={startHeadsUp}
+        onStartHeadsUpOnline={startHeadsUpOnline}
         isStarting={isLoading}
         isAddingPlayer={isAddingPlayer}
         onLeaveRoom={() => {

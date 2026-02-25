@@ -36,9 +36,13 @@ export interface Player {
   card?: ClashRoyaleCard;
   clue?: string;
   hasSubmittedClue: boolean;
+  assignedCardId?: string; // For headsup_online: unique card id
+  assignedCardName?: string; // Display name (hero/card name)
+  assignedCardImage?: string; // Image URL for headsup_online
+  score?: number; // For headsup_online: correct guesses
 }
 
-export type GameFormat = "imposter" | "headsup";
+export type GameFormat = "imposter" | "headsup" | "headsup_online";
 
 export interface GameRoom {
   id: string;
