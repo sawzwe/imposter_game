@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
-import HeadsUpScreen from "./components/HeadsUpScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
@@ -16,7 +16,6 @@ export default function HomeClient() {
   const { showToast } = useToast();
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
-  const [showHeadsUp, setShowHeadsUp] = useState(false);
   const [showGameSelect, setShowGameSelect] = useState(true);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
@@ -571,18 +570,6 @@ export default function HomeClient() {
     else createRoom();
   };
 
-  // Heads Up - single device game
-  if (showHeadsUp) {
-    return (
-      <HeadsUpScreen
-        onBack={() => {
-          setShowHeadsUp(false);
-          setShowGameSelect(true);
-        }}
-      />
-    );
-  }
-
   // Game mode selector - when no room and no invite link
   if (showGameSelect && !gameRoom && !roomIdFromUrl) {
     return (
@@ -608,11 +595,8 @@ export default function HomeClient() {
               Multiplayer · Find the imposter
             </span>
           </button>
-          <button
-            onClick={() => {
-              setShowGameSelect(false);
-              setShowHeadsUp(true);
-            }}
+          <Link
+            href="/headsup"
             className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
           >
             <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
@@ -624,7 +608,7 @@ export default function HomeClient() {
             <span className="mt-1 text-sm text-[var(--muted)]">
               Single device · Ask questions
             </span>
-          </button>
+          </Link>
         </div>
       </div>
     );

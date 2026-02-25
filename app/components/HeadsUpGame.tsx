@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useToast } from "./ToastContext";
 import { Hero, ClashRoyaleCard } from "../types";
 import { GameType } from "../types";
@@ -11,12 +12,11 @@ function getHeroImageUrl(hero: Hero): string {
   return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`;
 }
 
-interface HeadsUpScreenProps {
-  onBack: () => void;
+interface HeadsUpGameProps {
+  gameType: GameType;
 }
 
-export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
-  const [gameType, setGameType] = useState<GameType | null>(null);
+export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   const [currentCard, setCurrentCard] = useState<
     (Hero & { type: "hero" }) | (ClashRoyaleCard & { type: "card" }) | null
   >(null);
@@ -24,6 +24,7 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
   const [gotItCount, setGotItCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [cardKey, setCardKey] = useState(0);
+  const [justGotIt, setJustGotIt] = useState(false);
   const { showToast } = useToast();
 
   const fetchRandomHero = useCallback(async () => {
@@ -45,7 +46,6 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
   }, []);
 
   const loadNextCard = useCallback(async () => {
-    if (!gameType) return;
     setIsLoading(true);
     try {
       const item =
@@ -67,12 +67,10 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
   }, [gameType, fetchRandomHero, fetchRandomCard, showToast]);
 
   useEffect(() => {
-    if (gameType && round === 0) {
+    if (round === 0) {
       loadNextCard();
     }
-  }, [gameType, round]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [justGotIt, setJustGotIt] = useState(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGotIt = () => {
     setGotItCount((c) => c + 1);
@@ -82,61 +80,9 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
     loadNextCard();
   };
 
-  const handleSkip = () => {
-    loadNextCard();
-  };
+  const handleSkip = () => loadNextCard();
+  const handleNext = () => loadNextCard();
 
-  const handleNext = () => {
-    loadNextCard();
-  };
-
-  // Game type selection
-  if (gameType === null) {
-    return (
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-        <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
-          Heads Up
-        </h1>
-        <p className="mb-8 text-center text-sm text-[var(--muted)]">
-          Hold device to forehead. Others see the card. Ask yes/no questions!
-        </p>
-        <div className="grid w-full max-w-md grid-cols-2 gap-4">
-          <button
-            onClick={() => setGameType("dota2")}
-            className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-          >
-            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-              ⚔️
-            </span>
-            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
-              Dota 2
-            </span>
-            <span className="mt-1 text-sm text-[var(--muted)]">Heroes</span>
-          </button>
-          <button
-            onClick={() => setGameType("clashroyale")}
-            className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-          >
-            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-              👑
-            </span>
-            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
-              Clash Royale
-            </span>
-            <span className="mt-1 text-sm text-[var(--muted)]">Cards</span>
-          </button>
-        </div>
-        <button
-          onClick={onBack}
-          className="mt-8 rounded-xl border border-[var(--border)] py-3 px-6 font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
-        >
-          ← Back
-        </button>
-      </div>
-    );
-  }
-
-  // Card display
   const displayName =
     currentCard?.type === "hero"
       ? (currentCard as Hero).name_english_loc
@@ -147,16 +93,15 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
       ? getHeroImageUrl(currentCard as Hero)
       : (currentCard as ClashRoyaleCard)?.iconUrls?.medium;
 
-  // Loading skeleton while first card loads
   if (round === 0 && isLoading) {
     return (
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-        <button
-          onClick={onBack}
+        <Link
+          href="/headsup"
           className="absolute left-4 top-4 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"
         >
-          ← Home
-        </button>
+          ← Back
+        </Link>
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--blue)]" />
         <p className="mt-4 text-[var(--muted)]">Loading...</p>
       </div>
@@ -165,14 +110,13 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
 
   return (
     <div className="relative z-10 flex min-h-screen flex-col p-4 md:p-6">
-      {/* Round & score */}
       <div className="mb-4 flex items-center justify-between">
-        <button
-          onClick={onBack}
+        <Link
+          href="/headsup"
           className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition-all hover:bg-[var(--surface2)] hover:text-[var(--text)] active:scale-95"
         >
-          ← Home
-        </button>
+          ← Back
+        </Link>
         <div className="flex gap-4">
           <span className="rounded-lg bg-[var(--surface2)] px-3 py-1 font-['Rajdhani'] font-bold text-[var(--text)]">
             Round {round}
@@ -187,7 +131,6 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
         </div>
       </div>
 
-      {/* Card area - responsive for portrait & landscape */}
       <div className="flex flex-1 flex-col items-center justify-center">
         <div
           key={cardKey}
@@ -198,7 +141,7 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
               <img
                 src={imageUrl}
                 alt={displayName || ""}
-                className="h-32 w-32 rounded-xl object-cover border-2 border-[var(--border)] md:h-40 md:w-40"
+                className="h-32 w-32 rounded-xl border-2 border-[var(--border)] object-cover md:h-40 md:w-40"
               />
             </div>
           )}
@@ -217,7 +160,6 @@ export default function HeadsUpScreen({ onBack }: HeadsUpScreenProps) {
         </p>
       </div>
 
-      {/* Buttons */}
       <div className="mt-6 grid grid-cols-3 gap-3">
         <button
           onClick={handleGotIt}
