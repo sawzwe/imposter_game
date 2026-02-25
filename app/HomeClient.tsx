@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
 import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
-import LoadingSpinner from "./components/LoadingSpinner";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
 import { getUserFriendlyError } from "./lib/errorHandler";
@@ -18,6 +17,7 @@ export default function HomeClient() {
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
   const [showGameSelect, setShowGameSelect] = useState(true);
+  const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -307,8 +307,7 @@ export default function HomeClient() {
   const addPlayer = async (name: string) => {
     if (!gameRoom) return;
 
-    // For now, we'll use the join endpoint with a new player ID
-    // In a real app, you might want a separate endpoint for adding players
+    setIsAddingPlayer(true);
     const newPlayerId = `player_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -334,6 +333,8 @@ export default function HomeClient() {
       }
     } catch (error) {
       console.error("Error adding player:", error);
+    } finally {
+      setIsAddingPlayer(false);
     }
   };
 
@@ -679,12 +680,6 @@ export default function HomeClient() {
             </div>
           )}
 
-          {isLoading && (
-            <div className="mb-4">
-              <LoadingSpinner text="Loading..." />
-            </div>
-          )}
-
           <div className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-medium text-[var(--text)]">
@@ -744,25 +739,46 @@ export default function HomeClient() {
               <button
                 onClick={() => joinRoom(roomIdFromUrl)}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Joining..." : "Join Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Joining...
+                  </>
+                ) : (
+                  "Join Room"
+                )}
               </button>
             ) : roomCode.trim().length === 6 ? (
               <button
                 onClick={() => joinRoom(roomCode.trim())}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Joining..." : "Join Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Joining...
+                  </>
+                ) : (
+                  "Join Room"
+                )}
               </button>
             ) : (
               <button
                 onClick={createRoom}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Creating..." : "Create Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Room"
+                )}
               </button>
             )}
           </div>
@@ -796,6 +812,8 @@ export default function HomeClient() {
         onAddPlayer={addPlayer}
         onStartGame={startGame}
         onStartHeadsUp={startHeadsUp}
+        isStarting={isLoading}
+        isAddingPlayer={isAddingPlayer}
         onLeaveRoom={() => {
           showToast("Left the room");
           leaveRoom();

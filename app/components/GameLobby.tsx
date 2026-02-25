@@ -15,6 +15,8 @@ interface GameLobbyProps {
   onLeaveRoom?: () => void;
   onToggleHints?: () => void;
   onKickPlayer?: (playerId: string) => void;
+  isStarting?: boolean;
+  isAddingPlayer?: boolean;
 }
 
 export default function GameLobby({
@@ -27,6 +29,8 @@ export default function GameLobby({
   onLeaveRoom,
   onToggleHints,
   onKickPlayer,
+  isStarting = false,
+  isAddingPlayer = false,
 }: GameLobbyProps) {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [copied, setCopied] = useState(false);
@@ -197,9 +201,17 @@ export default function GameLobby({
               />
               <button
                 onClick={handleAddPlayer}
-                className="rounded-xl bg-[var(--green)] px-6 py-3 font-bold text-white transition-all hover:brightness-110 active:scale-95"
+                disabled={isAddingPlayer}
+                className="flex min-w-[5rem] items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-6 py-3 font-bold text-white transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Add
+                {isAddingPlayer ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Add...
+                  </>
+                ) : (
+                  "Add"
+                )}
               </button>
             </div>
           </div>
@@ -312,18 +324,32 @@ export default function GameLobby({
             {gameFormat === "headsup" && onStartHeadsUp ? (
               <button
                 onClick={() => onStartHeadsUp(selectedGame)}
-                disabled={!canStart}
-                className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canStart || isStarting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)
+                {isStarting ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Starting...
+                  </>
+                ) : (
+                  <>Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                )}
               </button>
             ) : (
               <button
                 onClick={() => onStartGame(selectedGame)}
-                disabled={!canStart}
-                className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canStart || isStarting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Start Imposter · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)
+                {isStarting ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Starting...
+                  </>
+                ) : (
+                  <>Start Imposter · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                )}
               </button>
             )}
             {!canStart && (
