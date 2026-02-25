@@ -184,6 +184,103 @@ export async function PATCH(
       return NextResponse.json({ room: updatedRoom });
     }
 
+    // Heads Up (multi-device): each player gets a unique character, countdown, then turn phone around
+    if (action === "startHeadsUp") {
+      if (room.players.length < 3) {
+        return NextResponse.json(
+          { error: "Need at least 3 players" },
+          { status: 400 }
+        );
+      }
+
+      const selectedGameType: GameType = gameType || "dota2";
+      const numPlayers = room.players.length;
+
+      if (selectedGameType === "dota2") {
+        const heroesResponse = await fetch(
+          `${request.nextUrl.origin}/api/heroes`
+        );
+        if (!heroesResponse.ok) {
+          throw new Error("Failed to fetch Dota 2 heroes");
+        }
+        const heroesData = await heroesResponse.json();
+        const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+        if (heroes.length < numPlayers) {
+          throw new Error("Not enough heroes for all players");
+        }
+
+        // Shuffle and pick one per player (no duplicates)
+        const shuffled = [...heroes].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const updatedPlayers = room.players.map((player, index) => ({
+          ...player,
+          isImposter: false,
+          hero: assigned[index],
+          card: undefined,
+          hasSubmittedClue: false,
+          clue: undefined,
+        }));
+
+        const countdownEnd = Date.now() + 4000; // 3, 2, 1, Go
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup",
+          gameState: "headsup_countdown",
+          headsupCountdownEnd: countdownEnd,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
+
+      if (selectedGameType === "clashroyale") {
+        const cardsResponse = await fetch(
+          `${request.nextUrl.origin}/api/clash-royale/cards`
+        );
+        if (!cardsResponse.ok) {
+          const errorData = await cardsResponse.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || "Failed to fetch Clash Royale cards"
+          );
+        }
+        const cardsData = await cardsResponse.json();
+        const cards: ClashRoyaleCard[] = cardsData.items || [];
+        if (cards.length < numPlayers) {
+          throw new Error("Not enough cards for all players");
+        }
+
+        const shuffled = [...cards].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const updatedPlayers = room.players.map((player, index) => ({
+          ...player,
+          isImposter: false,
+          hero: undefined,
+          card: assigned[index],
+          hasSubmittedClue: false,
+          clue: undefined,
+        }));
+
+        const countdownEnd = Date.now() + 4000;
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup",
+          gameState: "headsup_countdown",
+          headsupCountdownEnd: countdownEnd,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
+    }
+
     if (action === "submitClue") {
       if (!playerId || !clue) {
         return NextResponse.json(

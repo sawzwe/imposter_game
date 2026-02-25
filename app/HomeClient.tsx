@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
-import LoadingSpinner from "./components/LoadingSpinner";
+import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
 import { useToast } from "./components/ToastContext";
 import { GameRoom } from "./types";
 import { getUserFriendlyError } from "./lib/errorHandler";
@@ -15,6 +16,8 @@ export default function HomeClient() {
   const { showToast } = useToast();
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
+  const [showGameSelect, setShowGameSelect] = useState(true);
+  const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [roomCode, setRoomCode] = useState("");
@@ -304,8 +307,7 @@ export default function HomeClient() {
   const addPlayer = async (name: string) => {
     if (!gameRoom) return;
 
-    // For now, we'll use the join endpoint with a new player ID
-    // In a real app, you might want a separate endpoint for adding players
+    setIsAddingPlayer(true);
     const newPlayerId = `player_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -331,6 +333,8 @@ export default function HomeClient() {
       }
     } catch (error) {
       console.error("Error adding player:", error);
+    } finally {
+      setIsAddingPlayer(false);
     }
   };
 
@@ -368,6 +372,45 @@ export default function HomeClient() {
     } catch (error: any) {
       console.error("Error starting game:", error);
       setError(error.message || "Failed to start game");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startHeadsUp = async (gameType: "dota2" | "clashroyale") => {
+    if (!gameRoom || gameRoom.players.length < 3) {
+      setError("You need at least 3 players to start!");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "startHeadsUp",
+          gameType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to start Heads Up");
+      }
+
+      if (data.room) {
+        if (data.room.lastUpdated) {
+          lastRoomUpdateRef.current = data.room.lastUpdated;
+        }
+        setGameRoom(data.room);
+      }
+    } catch (error: any) {
+      console.error("Error starting Heads Up:", error);
+      setError(error.message || "Failed to start Heads Up");
     } finally {
       setIsLoading(false);
     }
@@ -568,10 +611,62 @@ export default function HomeClient() {
     else createRoom();
   };
 
+  // Game mode selector - when no room and no invite link
+  if (showGameSelect && !gameRoom && !roomIdFromUrl) {
+    return (
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+        <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+          Imposter Game
+        </h1>
+        <p className="mb-8 text-center text-sm text-[var(--muted)]">
+          Play with Dota 2 Heroes or Clash Royale Cards
+        </p>
+        <div className="grid w-full max-w-md grid-cols-2 gap-6">
+          <button
+            onClick={() => setShowGameSelect(false)}
+            className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+          >
+            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+              🎭
+            </span>
+            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+              Imposter
+            </span>
+            <span className="mt-1 text-sm text-[var(--muted)]">
+              Multiplayer · Find the imposter
+            </span>
+          </button>
+          <Link
+            href="/headsup"
+            className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+          >
+            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+              👆
+            </span>
+            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+              Heads Up
+            </span>
+            <span className="mt-1 text-sm text-[var(--muted)]">
+              Single device · Ask questions
+            </span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!gameRoom) {
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+          {!roomIdFromUrl && (
+            <button
+              onClick={() => setShowGameSelect(true)}
+              className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+            >
+              ← Back
+            </button>
+          )}
           <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
             Imposter Game
           </h1>
@@ -582,12 +677,6 @@ export default function HomeClient() {
           {error && (
             <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
               <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="mb-4">
-              <LoadingSpinner text="Loading..." />
             </div>
           )}
 
@@ -650,30 +739,67 @@ export default function HomeClient() {
               <button
                 onClick={() => joinRoom(roomIdFromUrl)}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Joining..." : "Join Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Joining...
+                  </>
+                ) : (
+                  "Join Room"
+                )}
               </button>
             ) : roomCode.trim().length === 6 ? (
               <button
                 onClick={() => joinRoom(roomCode.trim())}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Joining..." : "Join Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Joining...
+                  </>
+                ) : (
+                  "Join Room"
+                )}
               </button>
             ) : (
               <button
                 onClick={createRoom}
                 disabled={isLoading || !playerName.trim()}
-                className="w-full rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? "Creating..." : "Create Room"}
+                {isLoading ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Room"
+                )}
               </button>
             )}
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (
+    gameRoom.gameState === "headsup_countdown" ||
+    gameRoom.gameState === "headsup_playing"
+  ) {
+    return (
+      <HeadsUpMultiScreen
+        gameRoom={gameRoom}
+        playerId={playerId}
+        onLeaveRoom={() => {
+          showToast("Left the room");
+          leaveRoom();
+        }}
+      />
     );
   }
 
@@ -685,6 +811,9 @@ export default function HomeClient() {
         playerName={playerName}
         onAddPlayer={addPlayer}
         onStartGame={startGame}
+        onStartHeadsUp={startHeadsUp}
+        isStarting={isLoading}
+        isAddingPlayer={isAddingPlayer}
         onLeaveRoom={() => {
           showToast("Left the room");
           leaveRoom();
