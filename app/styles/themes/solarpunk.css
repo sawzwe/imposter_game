@@ -1,26 +1,26 @@
-/* Solarpunk theme — nature, greenery, eco-futuristic, optimistic */
+/* Solarpunk theme — nature, greenery, eco-futuristic (low contrast, softer) */
 
 [data-theme="solarpunk"] {
-  --bg: #eef4ea;
-  --surface: #f8fbf6;
-  --surface2: #f0f6eb;
-  --surface3: #e8efe2;
-  --card-bg: #ffffff;
-  --border: #c5d9bd;
-  --border-bright: #a8c4a0;
-  --blue: #4a8b7d;
-  --blue-glow: rgba(74, 139, 125, 0.25);
-  --green: #3d8b5e;
-  --red: #c95c4a;
-  --gold: #b8924a;
-  --text: #2d3a2a;
-  --text-bright: #1a2318;
-  --muted: #5a6b52;
+  --bg: #dde5d9;
+  --surface: #e8efe2;
+  --surface2: #e2eadc;
+  --surface3: #dce4d6;
+  --card-bg: #ecf2e8;
+  --border: #b8c8ae;
+  --border-bright: #a4b898;
+  --blue: #4a7d71;
+  --blue-glow: rgba(74, 125, 113, 0.18);
+  --green: #3a7a52;
+  --red: #b85a4a;
+  --gold: #a8844a;
+  --text: #3d4a38;
+  --text-bright: #2d3a28;
+  --muted: #5c6d58;
   --background: var(--bg);
   --foreground: var(--text);
-  --gradient-from: #4a8b7d;
-  --gradient-to: #5a9b6e;
-  --grid-color: rgba(74, 139, 125, 0.08);
+  --gradient-from: #4a7d71;
+  --gradient-to: #528a5e;
+  --grid-color: rgba(74, 125, 113, 0.06);
   --font-sans: "DM Sans", system-ui, sans-serif;
   --font-display: "Nunito", system-ui, sans-serif;
 }

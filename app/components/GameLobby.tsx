@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
+import { DotaLogo, ClashRoyaleEmote } from "./assets";
 import { useToast } from "./ToastContext";
 import { GameRoom, GameType, GameFormat } from "../types";
 
@@ -319,7 +320,9 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="mb-2 text-2xl">⚔️</div>
+                  <div className="mb-2 flex h-14 items-center justify-center">
+                    <DotaLogo className="h-10 w-10 object-contain" />
+                  </div>
                   <div className="font-display font-bold text-[var(--text)]">
                     Dota 2
                   </div>
@@ -333,7 +336,9 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="mb-2 text-2xl">👑</div>
+                  <div className="mb-2 flex h-14 items-center justify-center">
+                    <ClashRoyaleEmote className="h-14 w-14 object-contain" />
+                  </div>
                   <div className="font-display font-bold text-[var(--text)]">
                     Clash Royale
                   </div>
