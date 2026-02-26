@@ -120,38 +120,18 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   return (
     <div className="relative z-10 flex min-h-screen flex-col p-4 md:p-6">
       <LandscapeOrientationPrompt />
-      <div className="mb-4 flex items-center justify-between">
-        <Link
-          href="/headsup"
-          className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition-all hover:bg-[var(--surface2)] hover:text-[var(--text)] active:scale-95"
-        >
-          ← Back
-        </Link>
-        <div className="flex gap-4">
-          <span className="rounded-lg bg-[var(--surface2)] px-3 py-1 font-display font-bold text-[var(--text)]">
-            Round {round}
-          </span>
-          <span
-            className={`rounded-lg bg-[var(--green)]/20 px-3 py-1 font-display font-bold text-[var(--green)] transition-transform ${
-              justGotIt ? "animate-btn-pop" : ""
-            }`}
-          >
-            ✓ {gotItCount}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col items-center justify-center">
+      {/* Card + instructions first — flexible, shrinks in landscape */}
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-2">
         <div
           key={cardKey}
-          className="flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border-2 border-[var(--blue)] bg-[#0d1220] p-6 shadow-[0_0_40px_var(--blue-glow)] animate-headsup-card-in md:flex-row md:gap-8 md:p-8"
+          className="headsup-card flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border-2 border-[var(--blue)] bg-[#0d1220] p-4 shadow-[0_0_40px_var(--blue-glow)] animate-headsup-card-in md:flex-row md:gap-8 md:p-8"
         >
           {imageUrl && (
-            <div className="mb-4 flex-shrink-0 md:mb-0">
+            <div className="mb-3 flex-shrink-0 md:mb-0">
               <img
                 src={imageUrl}
                 alt={displayName || ""}
-                className="h-32 w-32 rounded-xl border-2 border-[var(--border)] object-cover md:h-40 md:w-40"
+                className="headsup-card-img h-24 w-24 rounded-xl border-2 border-[var(--border)] object-cover md:h-40 md:w-40"
               />
             </div>
           )}
@@ -159,22 +139,23 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
               {gameType === "dota2" ? "Hero" : "Card"}
             </p>
-            <h2 className="font-display text-3xl font-bold text-[var(--text-on-dark)] md:text-4xl">
+            <h2 className="font-display text-2xl font-bold text-[var(--text-on-dark)] md:text-4xl">
               {displayName || "Loading..."}
             </h2>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-[var(--muted)]">
+        <p className="mt-3 text-center text-sm text-[var(--muted)]">
           Ask yes/no questions. Others can see your card and answer.
         </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      {/* Buttons — always visible */}
+      <div className="headsup-buttons mt-3 shrink-0 grid grid-cols-3 gap-2">
         <button
           onClick={handleGotIt}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-4 font-display font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_var(--green-glow)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-3 font-display font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_var(--green-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">✓</span>
           <span>Got it!</span>
@@ -182,7 +163,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleSkip}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-4 font-display font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_var(--gold-glow)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-3 font-display font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_var(--gold-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">⏭</span>
           <span>Skip</span>
@@ -190,11 +171,33 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleNext}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-4 font-display font-bold text-[var(--blue)] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-3 font-display font-bold text-[var(--blue)] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">→</span>
           <span>Next</span>
         </button>
+      </div>
+
+      {/* Nav at bottom — frees top space, prevents scroll in landscape */}
+      <div className="mt-3 flex shrink-0 items-center justify-between border-t border-[var(--border)] pt-3">
+        <Link
+          href="/headsup"
+          className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-all hover:bg-[var(--surface2)] hover:text-[var(--text)] active:scale-95"
+        >
+          ← Back
+        </Link>
+        <div className="flex gap-3">
+          <span className="rounded-lg bg-[var(--surface2)] px-2.5 py-1 text-sm font-display font-bold text-[var(--text)]">
+            Round {round}
+          </span>
+          <span
+            className={`rounded-lg bg-[var(--green)]/20 px-2.5 py-1 text-sm font-display font-bold text-[var(--green)] transition-transform ${
+              justGotIt ? "animate-btn-pop" : ""
+            }`}
+          >
+            ✓ {gotItCount}
+          </span>
+        </div>
       </div>
     </div>
   );
