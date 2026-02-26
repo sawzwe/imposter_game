@@ -699,7 +699,7 @@ export default function HomeClient() {
         <p className="mb-8 text-center text-sm text-[var(--muted)]">
           Play with Dota 2 Heroes or Clash Royale Cards
         </p>
-        <div className="grid w-full max-w-md grid-cols-2 gap-6">
+        <div className="grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
           <button
             onClick={() => setShowGameSelect(false)}
             className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"

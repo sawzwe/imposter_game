@@ -20,7 +20,7 @@
 }
 
 :root {
-  --header-height: 0px;
+  --footer-height: 0px;
 }
 
 html {
@@ -34,8 +34,8 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
   min-height: 100dvh;
-  padding: calc(var(--header-height) + env(safe-area-inset-top, 0px))
-    env(safe-area-inset-right) env(safe-area-inset-bottom)
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right)
+    calc(var(--footer-height) + env(safe-area-inset-bottom, 0px))
     env(safe-area-inset-left);
 }
 

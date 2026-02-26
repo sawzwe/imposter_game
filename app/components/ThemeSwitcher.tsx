@@ -11,7 +11,11 @@ const THEMES = [
   { id: "solarpunk" as const, label: "Solarpunk", Icon: Leaf },
 ] as const;
 
-export default function ThemeSwitcher() {
+interface ThemeSwitcherProps {
+  openAbove?: boolean; // For footer — open dropdown above button
+}
+
+export default function ThemeSwitcher({ openAbove }: ThemeSwitcherProps) {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -44,11 +48,13 @@ export default function ThemeSwitcher() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            initial={{ opacity: 0, y: openAbove ? 8 : -8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            exit={{ opacity: 0, y: openAbove ? 8 : -8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 top-full z-50 mt-2 min-w-[160px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl backdrop-blur-md"
+            className={`absolute left-0 z-50 min-w-[160px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl backdrop-blur-md ${
+              openAbove ? "bottom-full mb-2" : "top-full mt-2"
+            }`}
             role="menu"
           >
             <div className="py-1">

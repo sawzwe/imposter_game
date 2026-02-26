@@ -31,7 +31,7 @@ export default function RootLayout({
           id="theme-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem("imposter-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default");var h=location.pathname==="/"?"3.5rem":"0px";document.documentElement.style.setProperty("--header-height",h)})();`,
+            __html: `(function(){var t=localStorage.getItem("imposter-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default");var h=location.pathname==="/"?"3rem":"0px";document.documentElement.style.setProperty("--footer-height",h)})();`,
           }}
         />
         <ThemeProvider>
