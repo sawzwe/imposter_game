@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
+import { DotaLogo, ClashRoyaleEmote } from "./assets";
 import { useToast } from "./ToastContext";
 import { GameRoom, GameType, GameFormat } from "../types";
 
@@ -100,17 +101,17 @@ export default function GameLobby({
   return (
     <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-        <h1 className="gradient-text mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+        <h1 className="gradient-text mb-6 text-center font-display text-3xl font-bold tracking-wide">
           Game Lobby
         </h1>
 
         <div className="mb-6">
           <div className="mb-4 rounded-2xl border-2 border-[var(--blue)] bg-[#0d1220] p-6 text-center shadow-[0_0_28px_var(--blue-glow)]">
-            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
               Room Code
             </p>
             <div className="flex items-center justify-center gap-3">
-              <p className="font-['Rajdhani'] text-4xl font-bold tracking-[0.2em] text-[#5b8fff]">
+              <p className="font-display text-4xl font-bold tracking-[0.2em] text-[var(--text-on-dark)]">
                 {roomCode}
               </p>
               <button
@@ -125,7 +126,7 @@ export default function GameLobby({
                 )}
               </button>
             </div>
-            <p className="mt-2 text-sm text-[var(--muted)]">
+            <p className="mt-2 text-sm text-[var(--muted-on-dark)]">
               Players: {gameRoom.players.length} / 10
             </p>
           </div>
@@ -152,7 +153,7 @@ export default function GameLobby({
         </div>
 
         <div className="mb-6">
-          <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
+          <h2 className="mb-3 font-display text-lg font-bold tracking-wide text-[var(--text)]">
             Players
           </h2>
           <div className="space-y-2">
@@ -164,7 +165,7 @@ export default function GameLobby({
                 <span className="text-[var(--text)]">
                   {player.name}
                   {player.id === playerId && (
-                    <span className="ml-2 rounded bg-[var(--blue)]/20 px-1.5 py-0.5 text-xs font-semibold text-[#5b8fff]">
+                    <span className="ml-2 rounded bg-[var(--blue)]/20 px-1.5 py-0.5 text-xs font-semibold text-[var(--blue)]">
                       You
                     </span>
                   )}
@@ -189,7 +190,7 @@ export default function GameLobby({
 
         {isHost && (
           <div className="mb-6">
-            <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
+            <h2 className="mb-3 font-display text-lg font-bold tracking-wide text-[var(--text)]">
               Add Player
             </h2>
             <div className="flex gap-2">
@@ -224,7 +225,7 @@ export default function GameLobby({
         {isHost && (
           <div className="space-y-4">
             <div>
-              <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
+              <h2 className="mb-3 font-display text-lg font-bold tracking-wide text-[var(--text)]">
                 Game Format
               </h2>
               <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -237,7 +238,7 @@ export default function GameLobby({
                   }`}
                 >
                   <div className="mb-1 text-2xl">🎭</div>
-                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                  <div className="font-display font-bold text-[var(--text)]">
                     Imposter
                   </div>
                   <div className="text-xs text-[var(--muted)]">
@@ -253,7 +254,7 @@ export default function GameLobby({
                   }`}
                 >
                   <div className="mb-1 text-2xl">👆</div>
-                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                  <div className="font-display font-bold text-[var(--text)]">
                     Heads Up
                   </div>
                   <div className="text-xs text-[var(--muted)]">
@@ -269,7 +270,7 @@ export default function GameLobby({
                   }`}
                 >
                   <div className="mb-1 text-2xl">🌐</div>
-                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                  <div className="font-display font-bold text-[var(--text)]">
                     Online
                   </div>
                   <div className="text-xs text-[var(--muted)]">
@@ -307,7 +308,7 @@ export default function GameLobby({
             )}
 
             <div>
-              <h2 className="mb-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-[var(--text)]">
+              <h2 className="mb-3 font-display text-lg font-bold tracking-wide text-[var(--text)]">
                 Select Game
               </h2>
               <div className="grid grid-cols-2 gap-3">
@@ -319,8 +320,10 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="mb-2 text-2xl">⚔️</div>
-                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                  <div className="mb-2 flex h-14 items-center justify-center">
+                    <DotaLogo className="h-10 w-10 object-contain" />
+                  </div>
+                  <div className="font-display font-bold text-[var(--text)]">
                     Dota 2
                   </div>
                   <div className="text-sm text-[var(--muted)]">Heroes</div>
@@ -333,8 +336,10 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
                   }`}
                 >
-                  <div className="mb-2 text-2xl">👑</div>
-                  <div className="font-['Rajdhani'] font-bold text-[var(--text)]">
+                  <div className="mb-2 flex h-14 items-center justify-center">
+                    <ClashRoyaleEmote className="h-14 w-14 object-contain" />
+                  </div>
+                  <div className="font-display font-bold text-[var(--text)]">
                     Clash Royale
                   </div>
                   <div className="text-sm text-[var(--muted)]">Cards</div>
@@ -345,7 +350,7 @@ export default function GameLobby({
               <button
                 onClick={() => onStartHeadsUp(selectedGame)}
                 disabled={!canStart || isStarting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isStarting ? (
                   <>
@@ -360,7 +365,7 @@ export default function GameLobby({
               <button
                 onClick={() => onStartHeadsUpOnline(selectedGame)}
                 disabled={!canStart || isStarting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isStarting ? (
                   <>
@@ -375,7 +380,7 @@ export default function GameLobby({
               <button
                 onClick={() => onStartGame(selectedGame)}
                 disabled={!canStart || isStarting}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isStarting ? (
                   <>

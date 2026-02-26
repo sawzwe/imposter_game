@@ -81,17 +81,19 @@ export default function GameScreen({
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-white">
+          <h1 className="mb-6 text-center font-display text-3xl font-bold tracking-wide text-white">
             Round {gameRoom.round}
           </h1>
 
-          <div className={`mb-6 rounded-2xl border-2 p-6 ${isImposter ? "border-[var(--red)] bg-[#0d1220] shadow-[0_0_32px_rgba(239,68,68,0.35)]" : "border-[var(--green)] bg-[#0d1220] shadow-[0_0_32px_rgba(34,197,94,0.3)]"}`}>
+          <div
+            className={`mb-6 rounded-2xl border-2 p-6 ${isImposter ? "border-[var(--red)] bg-[#0d1220] shadow-[0_0_32px_var(--red-glow)]" : "border-[var(--green)] bg-[#0d1220] shadow-[0_0_32px_var(--green-glow)]"}`}
+          >
             {isImposter ? (
               <div>
                 <h2 className="mb-2 text-xl font-bold text-[var(--red)]">
                   🎭 You are the IMPOSTER!
                 </h2>
-                <p className="mb-3 text-[var(--text)]/90">
+                <p className="mb-3 text-[var(--text-on-dark)]/90">
                   You don't know the secret{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"}. Try
                   to blend in by giving a clue that could apply to any{" "}
@@ -142,7 +144,7 @@ export default function GameScreen({
                       />
                     )}
                   <div>
-                    <p className="text-lg font-bold text-[var(--text)]">
+                    <p className="text-lg font-bold text-[var(--text-on-dark)]">
                       Secret{" "}
                       {gameRoom.gameType === "clashroyale" ? "Card" : "Hero"}:{" "}
                       {gameRoom.gameType === "clashroyale"
@@ -151,7 +153,7 @@ export default function GameScreen({
                     </p>
                     {gameRoom.gameType === "clashroyale" &&
                       gameRoom.currentCard && (
-                        <div className="mt-1 text-sm text-[var(--muted)]">
+                        <div className="mt-1 text-sm text-[var(--muted-on-dark)]">
                           <span className="font-medium">Elixir Cost:</span>{" "}
                           {gameRoom.currentCard.elixirCost} |{" "}
                           {gameRoom.currentCard.rarity && (
@@ -164,7 +166,7 @@ export default function GameScreen({
                       )}
                   </div>
                 </div>
-                <p className="text-[var(--text)]/90">
+                <p className="text-[var(--text-on-dark)]/90">
                   Give a clue about this{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"}{" "}
                   without being too obvious. Try to identify the imposter!
@@ -193,7 +195,7 @@ export default function GameScreen({
                     showToast("Clue submitted!");
                   }
                 }}
-                className="mt-4 w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                className="mt-4 w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
               >
                 Submit Clue
               </button>
@@ -205,9 +207,18 @@ export default function GameScreen({
               </p>
               <p className="mt-2 flex items-center gap-2 text-sm text-[var(--muted)]">
                 <span className="inline-flex gap-0.5">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted)]"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </span>
                 Waiting for other players...
               </p>
@@ -215,19 +226,22 @@ export default function GameScreen({
           )}
 
           <div className="mb-4">
-            <h3 className="mb-2 font-['Rajdhani'] font-bold tracking-wide text-[var(--text)]">
-              Submitted Clues ({gameRoom.clues.length} / {gameRoom.players.length})
+            <h3 className="mb-2 font-display font-bold tracking-wide text-[var(--text)]">
+              Submitted Clues ({gameRoom.clues.length} /{" "}
+              {gameRoom.players.length})
             </h3>
             <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface2)]">
               <div
                 className="h-full rounded-full bg-[var(--blue)] transition-all duration-500"
-                style={{ width: `${(gameRoom.clues.length / gameRoom.players.length) * 100}%` }}
+                style={{
+                  width: `${(gameRoom.clues.length / gameRoom.players.length) * 100}%`,
+                }}
               />
             </div>
             <div className="space-y-2">
               {gameRoom.clues.map((clueData) => {
                 const player = gameRoom.players.find(
-                  (p) => p.id === clueData.playerId
+                  (p) => p.id === clueData.playerId,
                 );
                 return (
                   <div
@@ -271,18 +285,18 @@ export default function GameScreen({
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
           <div className="mb-6 text-center">
-            <h1 className="mb-2 font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
+            <h1 className="mb-2 font-display text-3xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h1>
             {timeRemaining !== null && (
               <div className="mt-4">
                 <div
-                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full font-['Rajdhani'] text-3xl font-bold ${
+                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full font-display text-3xl font-bold ${
                     timeRemaining <= 10
                       ? "bg-[var(--red)] text-white"
                       : timeRemaining <= 30
-                      ? "bg-[var(--gold)] text-white"
-                      : "bg-[var(--blue)] text-white"
+                        ? "bg-[var(--gold)] text-white"
+                        : "bg-[var(--blue)] text-white"
                   }`}
                 >
                   {timeRemaining}
@@ -297,13 +311,13 @@ export default function GameScreen({
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
+            <h2 className="mb-4 font-display text-xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h2>
             <div className="space-y-3">
               {gameRoom.players.map((player) => {
                 const clueData = gameRoom.clues.find(
-                  (c) => c.playerId === player.id
+                  (c) => c.playerId === player.id,
                 );
                 return (
                   <div
@@ -340,7 +354,7 @@ export default function GameScreen({
                     {hasVoted &&
                       gameRoom.votes.some(
                         (v) =>
-                          v.voterId === playerId && v.targetId === player.id
+                          v.voterId === playerId && v.targetId === player.id,
                       ) && (
                         <p className="mt-2 text-sm font-semibold text-[var(--green)]">
                           ✓ You voted for {player.name}
@@ -380,10 +394,10 @@ export default function GameScreen({
     });
 
     const mostVoted = Object.entries(voteCounts).sort(
-      ([, a], [, b]) => b - a
+      ([, a], [, b]) => b - a,
     )[0];
     const votedOutPlayer = gameRoom.players.find(
-      (p) => p.id === mostVoted?.[0]
+      (p) => p.id === mostVoted?.[0],
     );
     const wasImposter = votedOutPlayer?.isImposter;
 
@@ -399,13 +413,13 @@ export default function GameScreen({
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
+          <h1 className="mb-6 text-center font-display text-3xl font-bold tracking-wide text-[var(--text)]">
             Game Over!
           </h1>
 
           <div className="mb-6 rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-6">
             <div className="mb-2 flex items-center gap-4">
-                {gameRoom.gameType === "clashroyale" &&
+              {gameRoom.gameType === "clashroyale" &&
                 gameRoom.currentCard?.iconUrls?.medium && (
                   <img
                     src={gameRoom.currentCard.iconUrls.medium}
@@ -438,7 +452,7 @@ export default function GameScreen({
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
+            <h2 className="mb-4 font-display text-xl font-bold tracking-wide text-[var(--text)]">
               Voting Results
             </h2>
             <div className="space-y-2">
@@ -446,8 +460,8 @@ export default function GameScreen({
                 .sort(
                   (
                     a: { player: (typeof gameRoom.players)[0]; votes: number },
-                    b: { player: (typeof gameRoom.players)[0]; votes: number }
-                  ) => b.votes - a.votes
+                    b: { player: (typeof gameRoom.players)[0]; votes: number },
+                  ) => b.votes - a.votes,
                 )
                 .map(
                   ({
@@ -475,7 +489,7 @@ export default function GameScreen({
                         </p>
                       </div>
                     </div>
-                  )
+                  ),
                 )}
             </div>
           </div>
@@ -485,7 +499,7 @@ export default function GameScreen({
               {onNextRound && (
                 <button
                   onClick={onNextRound}
-                  className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                  className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
                 >
                   Next Round
                 </button>

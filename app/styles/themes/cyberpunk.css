@@ -1,0 +1,70 @@
+/* Cyberpunk theme — neon on black, Blade Runner vibes (low contrast for comfort) */
+
+[data-theme="cyberpunk"] {
+  --bg: #0c0c10;
+  --surface: #111117;
+  --surface2: #16161d;
+  --surface3: #1b1b24;
+  --card-bg: #0f0f14;
+  --border: #252532;
+  --border-bright: #343446;
+  --blue: #6ebdc4;
+  --blue-glow: rgba(110, 189, 196, 0.2);
+  --green: #7ddb68;
+  --green-glow: rgba(125, 219, 104, 0.2);
+  --red: #d86a82;
+  --red-glow: rgba(216, 106, 130, 0.25);
+  --gold: #d9b55c;
+  --gold-glow: rgba(217, 181, 92, 0.2);
+  --text: #9ca3b4;
+  --text-bright: #b8bfd0;
+  --text-on-dark: #9ca3b4;
+  --muted: #5c6374;
+  --muted-on-dark: #6b7280;
+  --background: var(--bg);
+  --foreground: var(--text);
+  --gradient-from: #6ebdc4;
+  --gradient-to: #a89ab5;
+  --grid-color: rgba(110, 189, 196, 0.012);
+  --neon-cyan: #6ebdc4;
+  --neon-magenta: #a89ab5;
+  --font-sans: "Share Tech Mono", "Consolas", monospace;
+  --font-display: "Orbitron", system-ui, sans-serif;
+}
+
+[data-theme="cyberpunk"] body {
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+}
+
+[data-theme="cyberpunk"] .gradient-text {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Cyberpunk grid background — override default */
+[data-theme="cyberpunk"] body::before {
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: gridPan 25s linear infinite;
+}
+
+/* Very subtle scanline overlay */
+[data-theme="cyberpunk"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.02) 2px,
+    rgba(0, 0, 0, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}

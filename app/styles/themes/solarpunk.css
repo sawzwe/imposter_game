@@ -1,0 +1,51 @@
+/* Solarpunk theme — nature, greenery, eco-futuristic (low contrast, softer) */
+
+[data-theme="solarpunk"] {
+  --bg: #dde5d9;
+  --surface: #e8efe2;
+  --surface2: #e2eadc;
+  --surface3: #dce4d6;
+  --card-bg: #ecf2e8;
+  --border: #b8c8ae;
+  --border-bright: #a4b898;
+  --blue: #4a7d71;
+  --blue-glow: rgba(74, 125, 113, 0.25);
+  --green: #3a7a52;
+  --green-glow: rgba(58, 122, 82, 0.25);
+  --red: #b85a4a;
+  --red-glow: rgba(184, 90, 74, 0.25);
+  --gold: #a8844a;
+  --gold-glow: rgba(168, 132, 74, 0.25);
+  --text: #3d4a38;
+  --text-bright: #2d3a28;
+  --text-on-dark: #e8efe0;
+  --muted: #5c6d58;
+  --muted-on-dark: #b8c8b0;
+  --background: var(--bg);
+  --foreground: var(--text);
+  --gradient-from: #4a7d71;
+  --gradient-to: #528a5e;
+  --grid-color: rgba(74, 125, 113, 0.06);
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Nunito", system-ui, sans-serif;
+}
+
+[data-theme="solarpunk"] body {
+  font-family: var(--font-sans);
+}
+
+[data-theme="solarpunk"] .gradient-text {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Solarpunk grid — soft teal-green lines */
+[data-theme="solarpunk"] body::before {
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridPan 20s linear infinite;
+}
