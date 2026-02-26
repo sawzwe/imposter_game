@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useToast } from "./ToastContext";
+import LandscapeOrientationPrompt from "./LandscapeOrientationPrompt";
 import { Hero, ClashRoyaleCard } from "../types";
 import { GameType } from "../types";
 
@@ -25,6 +26,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [cardKey, setCardKey] = useState(0);
   const [justGotIt, setJustGotIt] = useState(false);
+  const fetchIdRef = useRef(0);
   const { showToast } = useToast();
 
   const fetchRandomHero = useCallback(async () => {
@@ -46,12 +48,15 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   }, []);
 
   const loadNextCard = useCallback(async () => {
+    const thisFetchId = ++fetchIdRef.current;
     setIsLoading(true);
     try {
       const item =
         gameType === "dota2"
           ? await fetchRandomHero()
           : await fetchRandomCard();
+      // Ignore stale responses (e.g. from React Strict Mode double-mount)
+      if (thisFetchId !== fetchIdRef.current) return;
       if (item) {
         setCardKey((k) => k + 1);
         setCurrentCard(item);
@@ -60,9 +65,12 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         showToast("Could not load characters");
       }
     } catch (e) {
+      if (thisFetchId !== fetchIdRef.current) return;
       showToast("Failed to load");
     } finally {
-      setIsLoading(false);
+      if (thisFetchId === fetchIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [gameType, fetchRandomHero, fetchRandomCard, showToast]);
 
@@ -96,6 +104,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   if (round === 0 && isLoading) {
     return (
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+        <LandscapeOrientationPrompt />
         <Link
           href="/headsup"
           className="absolute left-4 top-4 rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface2)] hover:text-[var(--text)]"
@@ -110,6 +119,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
 
   return (
     <div className="relative z-10 flex min-h-screen flex-col p-4 md:p-6">
+      <LandscapeOrientationPrompt />
       <div className="mb-4 flex items-center justify-between">
         <Link
           href="/headsup"
@@ -146,10 +156,10 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
             </div>
           )}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
               {gameType === "dota2" ? "Hero" : "Card"}
             </p>
-            <h2 className="font-display text-3xl font-bold text-[var(--text)] md:text-4xl">
+            <h2 className="font-display text-3xl font-bold text-[var(--text-on-dark)] md:text-4xl">
               {displayName || "Loading..."}
             </h2>
           </div>
@@ -164,7 +174,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleGotIt}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-4 font-display font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-4 font-display font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_var(--green-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">✓</span>
           <span>Got it!</span>
@@ -172,7 +182,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleSkip}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-4 font-display font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-4 font-display font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_var(--gold-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">⏭</span>
           <span>Skip</span>
@@ -180,7 +190,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleNext}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-4 font-display font-bold text-[#5b8fff] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-4 font-display font-bold text-[var(--blue)] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">→</span>
           <span>Next</span>

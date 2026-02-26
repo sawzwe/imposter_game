@@ -107,11 +107,11 @@ export default function GameLobby({
 
         <div className="mb-6">
           <div className="mb-4 rounded-2xl border-2 border-[var(--blue)] bg-[#0d1220] p-6 text-center shadow-[0_0_28px_var(--blue-glow)]">
-            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
               Room Code
             </p>
             <div className="flex items-center justify-center gap-3">
-              <p className="font-display text-4xl font-bold tracking-[0.2em] text-[#5b8fff]">
+              <p className="font-display text-4xl font-bold tracking-[0.2em] text-[var(--text-on-dark)]">
                 {roomCode}
               </p>
               <button
@@ -126,7 +126,7 @@ export default function GameLobby({
                 )}
               </button>
             </div>
-            <p className="mt-2 text-sm text-[var(--muted)]">
+            <p className="mt-2 text-sm text-[var(--muted-on-dark)]">
               Players: {gameRoom.players.length} / 10
             </p>
           </div>
@@ -165,7 +165,7 @@ export default function GameLobby({
                 <span className="text-[var(--text)]">
                   {player.name}
                   {player.id === playerId && (
-                    <span className="ml-2 rounded bg-[var(--blue)]/20 px-1.5 py-0.5 text-xs font-semibold text-[#5b8fff]">
+                    <span className="ml-2 rounded bg-[var(--blue)]/20 px-1.5 py-0.5 text-xs font-semibold text-[var(--blue)]">
                       You
                     </span>
                   )}

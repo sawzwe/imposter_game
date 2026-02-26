@@ -88,7 +88,7 @@ export default function HeadsUpOnline({
                     </div>
                     <button
                       onClick={() => onRotateCard(player.id)}
-                      className="mt-3 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-2.5 font-display font-bold text-[var(--green)] transition-all hover:bg-[var(--green)]/30 hover:shadow-[0_0_12px_rgba(34,197,94,0.2)] active:scale-[0.98]"
+                      className="mt-3 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-2.5 font-display font-bold text-[var(--green)] transition-all hover:bg-[var(--green)]/30 hover:shadow-[0_0_12px_var(--green-glow)] active:scale-[0.98]"
                     >
                       Correct ✓
                     </button>

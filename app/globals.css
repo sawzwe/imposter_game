@@ -19,11 +19,24 @@
   --font-display: "Rajdhani", system-ui, sans-serif;
 }
 
+:root {
+  --header-height: 0px;
+}
+
+html {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   min-height: 100vh;
+  min-height: 100dvh;
+  padding: calc(var(--header-height) + env(safe-area-inset-top, 0px))
+    env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 /* Theme-aware display font — headings, titles, buttons */
@@ -35,6 +48,7 @@ button,
 a,
 [role="button"] {
   cursor: pointer;
+  touch-action: manipulation; /* Reduces 300ms tap delay on mobile */
 }
 
 /* Animated grid background — uses theme var */

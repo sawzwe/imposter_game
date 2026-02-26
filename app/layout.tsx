@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     "A multiplayer word-based imposter game with Dota 2 heroes and Clash Royale cards",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,7 +31,7 @@ export default function RootLayout({
           id="theme-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem("imposter-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default")})();`,
+            __html: `(function(){var t=localStorage.getItem("imposter-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default");var h=location.pathname==="/"?"3.5rem":"0px";document.documentElement.style.setProperty("--header-height",h)})();`,
           }}
         />
         <ThemeProvider>

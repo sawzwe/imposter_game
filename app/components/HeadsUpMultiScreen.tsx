@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GameRoom } from "../types";
+import LandscapeOrientationPrompt from "./LandscapeOrientationPrompt";
 import { Hero } from "../types";
 
 function getHeroImageUrl(hero: Hero): string {
@@ -57,6 +58,7 @@ export default function HeadsUpMultiScreen({
   if (isCountdownPhase && countdown !== null && countdown > 0) {
     return (
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+        <LandscapeOrientationPrompt />
         <div className="text-center">
           <p className="mb-4 text-sm text-[var(--muted)]">
             Get ready! Turn your phone around when the countdown ends
@@ -75,6 +77,7 @@ export default function HeadsUpMultiScreen({
   // Character display - turn phone so others can see
   return (
     <div className="relative z-10 flex min-h-screen flex-col p-4 md:p-6">
+      <LandscapeOrientationPrompt />
       <div className="absolute right-4 top-4">
         {onLeaveRoom && (
           <button
@@ -108,10 +111,10 @@ export default function HeadsUpMultiScreen({
             </div>
           )}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
+            <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
               {gameRoom.gameType === "dota2" ? "Hero" : "Card"}
             </p>
-            <h2 className="font-display text-4xl font-bold text-[var(--text)] md:text-5xl">
+            <h2 className="font-display text-4xl font-bold text-[var(--text-on-dark)] md:text-5xl">
               {displayName || "???"}
             </h2>
           </div>
