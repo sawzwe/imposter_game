@@ -81,7 +81,7 @@ export default function GameScreen({
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-white">
+          <h1 className="mb-6 text-center font-display text-3xl font-bold tracking-wide text-white">
             Round {gameRoom.round}
           </h1>
 
@@ -193,7 +193,7 @@ export default function GameScreen({
                     showToast("Clue submitted!");
                   }
                 }}
-                className="mt-4 w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                className="mt-4 w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
               >
                 Submit Clue
               </button>
@@ -215,7 +215,7 @@ export default function GameScreen({
           )}
 
           <div className="mb-4">
-            <h3 className="mb-2 font-['Rajdhani'] font-bold tracking-wide text-[var(--text)]">
+            <h3 className="mb-2 font-display font-bold tracking-wide text-[var(--text)]">
               Submitted Clues ({gameRoom.clues.length} / {gameRoom.players.length})
             </h3>
             <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface2)]">
@@ -271,13 +271,13 @@ export default function GameScreen({
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
           <div className="mb-6 text-center">
-            <h1 className="mb-2 font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
+            <h1 className="mb-2 font-display text-3xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h1>
             {timeRemaining !== null && (
               <div className="mt-4">
                 <div
-                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full font-['Rajdhani'] text-3xl font-bold ${
+                  className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full font-display text-3xl font-bold ${
                     timeRemaining <= 10
                       ? "bg-[var(--red)] text-white"
                       : timeRemaining <= 30
@@ -297,7 +297,7 @@ export default function GameScreen({
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
+            <h2 className="mb-4 font-display text-xl font-bold tracking-wide text-[var(--text)]">
               Vote for the Imposter
             </h2>
             <div className="space-y-3">
@@ -399,7 +399,7 @@ export default function GameScreen({
     return (
       <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-          <h1 className="mb-6 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide text-[var(--text)]">
+          <h1 className="mb-6 text-center font-display text-3xl font-bold tracking-wide text-[var(--text)]">
             Game Over!
           </h1>
 
@@ -438,7 +438,7 @@ export default function GameScreen({
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-4 font-['Rajdhani'] text-xl font-bold tracking-wide text-[var(--text)]">
+            <h2 className="mb-4 font-display text-xl font-bold tracking-wide text-[var(--text)]">
               Voting Results
             </h2>
             <div className="space-y-2">
@@ -485,7 +485,7 @@ export default function GameScreen({
               {onNextRound && (
                 <button
                   onClick={onNextRound}
-                  className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                  className="w-full rounded-xl bg-[var(--blue)] px-4 py-4 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98]"
                 >
                   Next Round
                 </button>

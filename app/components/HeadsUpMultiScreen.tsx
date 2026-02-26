@@ -61,7 +61,7 @@ export default function HeadsUpMultiScreen({
           <p className="mb-4 text-sm text-[var(--muted)]">
             Get ready! Turn your phone around when the countdown ends
           </p>
-          <div className="font-['Rajdhani'] text-8xl font-bold text-[var(--blue)] animate-headsup-card-in">
+          <div className="font-display text-8xl font-bold text-[var(--blue)] animate-headsup-card-in">
             {countdown}
           </div>
           <p className="mt-6 text-sm text-[var(--muted)]">
@@ -111,7 +111,7 @@ export default function HeadsUpMultiScreen({
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
               {gameRoom.gameType === "dota2" ? "Hero" : "Card"}
             </p>
-            <h2 className="font-['Rajdhani'] text-4xl font-bold text-[var(--text)] md:text-5xl">
+            <h2 className="font-display text-4xl font-bold text-[var(--text)] md:text-5xl">
               {displayName || "???"}
             </h2>
           </div>

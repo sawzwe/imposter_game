@@ -693,7 +693,7 @@ export default function HomeClient() {
   if (showGameSelect && !gameRoom && !roomIdFromUrl) {
     return (
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-        <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+        <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
           Imposter Game
         </h1>
         <p className="mb-8 text-center text-sm text-[var(--muted)]">
@@ -707,7 +707,7 @@ export default function HomeClient() {
             <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
               🎭
             </span>
-            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+            <span className="font-display text-xl font-bold text-[var(--text)]">
               Imposter
             </span>
             <span className="mt-1 text-sm text-[var(--muted)]">
@@ -721,7 +721,7 @@ export default function HomeClient() {
             <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
               👆
             </span>
-            <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+            <span className="font-display text-xl font-bold text-[var(--text)]">
               Heads Up
             </span>
             <span className="mt-1 text-sm text-[var(--muted)]">
@@ -745,7 +745,7 @@ export default function HomeClient() {
               ← Back
             </button>
           )}
-          <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+          <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
             Imposter Game
           </h1>
           <p className="mb-6 text-center text-sm text-[var(--muted)]">
@@ -803,7 +803,7 @@ export default function HomeClient() {
                     )
                   }
                   placeholder="Enter 6-digit code"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-['Rajdhani'] text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
                   maxLength={6}
                   disabled={isLoading}
                 />
@@ -817,7 +817,7 @@ export default function HomeClient() {
               <button
                 onClick={() => joinRoom(roomIdFromUrl)}
                 disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isLoading ? (
                   <>
@@ -832,7 +832,7 @@ export default function HomeClient() {
               <button
                 onClick={() => joinRoom(roomCode.trim())}
                 disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isLoading ? (
                   <>
@@ -847,7 +847,7 @@ export default function HomeClient() {
               <button
                 onClick={createRoom}
                 disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-['Rajdhani'] text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isLoading ? (
                   <>

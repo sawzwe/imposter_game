@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function HeadsUpSelectPage() {
   return (
     <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-      <h1 className="gradient-text mb-2 text-center font-['Rajdhani'] text-3xl font-bold tracking-wide">
+      <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
         Heads Up
       </h1>
       <p className="mb-8 text-center text-sm text-[var(--muted)]">
@@ -19,7 +19,7 @@ export default function HeadsUpSelectPage() {
           <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
             ⚔️
           </span>
-          <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+          <span className="font-display text-xl font-bold text-[var(--text)]">
             Dota 2
           </span>
           <span className="mt-1 text-sm text-[var(--muted)]">Heroes</span>
@@ -31,7 +31,7 @@ export default function HeadsUpSelectPage() {
           <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
             👑
           </span>
-          <span className="font-['Rajdhani'] text-xl font-bold text-[var(--text)]">
+          <span className="font-display text-xl font-bold text-[var(--text)]">
             Clash Royale
           </span>
           <span className="mt-1 text-sm text-[var(--muted)]">Cards</span>

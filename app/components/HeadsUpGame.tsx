@@ -118,11 +118,11 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
           ← Back
         </Link>
         <div className="flex gap-4">
-          <span className="rounded-lg bg-[var(--surface2)] px-3 py-1 font-['Rajdhani'] font-bold text-[var(--text)]">
+          <span className="rounded-lg bg-[var(--surface2)] px-3 py-1 font-display font-bold text-[var(--text)]">
             Round {round}
           </span>
           <span
-            className={`rounded-lg bg-[var(--green)]/20 px-3 py-1 font-['Rajdhani'] font-bold text-[var(--green)] transition-transform ${
+            className={`rounded-lg bg-[var(--green)]/20 px-3 py-1 font-display font-bold text-[var(--green)] transition-transform ${
               justGotIt ? "animate-btn-pop" : ""
             }`}
           >
@@ -149,7 +149,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted)]">
               {gameType === "dota2" ? "Hero" : "Card"}
             </p>
-            <h2 className="font-['Rajdhani'] text-3xl font-bold text-[var(--text)] md:text-4xl">
+            <h2 className="font-display text-3xl font-bold text-[var(--text)] md:text-4xl">
               {displayName || "Loading..."}
             </h2>
           </div>
@@ -164,7 +164,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleGotIt}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-4 font-['Rajdhani'] font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--green)] bg-[var(--green)]/20 py-4 font-display font-bold text-[var(--green)] transition-all duration-200 hover:scale-105 hover:bg-[var(--green)]/30 hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">✓</span>
           <span>Got it!</span>
@@ -172,7 +172,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleSkip}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-4 font-['Rajdhani'] font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--gold)] bg-[var(--gold)]/20 py-4 font-display font-bold text-[var(--gold)] transition-all duration-200 hover:scale-105 hover:bg-[var(--gold)]/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">⏭</span>
           <span>Skip</span>
@@ -180,7 +180,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         <button
           onClick={handleNext}
           disabled={isLoading}
-          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-4 font-['Rajdhani'] font-bold text-[#5b8fff] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
+          className="group flex flex-col items-center gap-1 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/20 py-4 font-display font-bold text-[#5b8fff] transition-all duration-200 hover:scale-105 hover:bg-[var(--blue)]/30 hover:shadow-[0_0_20px_var(--blue-glow)] active:scale-95 disabled:opacity-50"
         >
           <span className="text-2xl">→</span>
           <span>Next</span>

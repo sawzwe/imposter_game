@@ -1,0 +1,46 @@
+/* Solarpunk theme — nature, greenery, eco-futuristic, optimistic */
+
+[data-theme="solarpunk"] {
+  --bg: #eef4ea;
+  --surface: #f8fbf6;
+  --surface2: #f0f6eb;
+  --surface3: #e8efe2;
+  --card-bg: #ffffff;
+  --border: #c5d9bd;
+  --border-bright: #a8c4a0;
+  --blue: #4a8b7d;
+  --blue-glow: rgba(74, 139, 125, 0.25);
+  --green: #3d8b5e;
+  --red: #c95c4a;
+  --gold: #b8924a;
+  --text: #2d3a2a;
+  --text-bright: #1a2318;
+  --muted: #5a6b52;
+  --background: var(--bg);
+  --foreground: var(--text);
+  --gradient-from: #4a8b7d;
+  --gradient-to: #5a9b6e;
+  --grid-color: rgba(74, 139, 125, 0.08);
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Nunito", system-ui, sans-serif;
+}
+
+[data-theme="solarpunk"] body {
+  font-family: var(--font-sans);
+}
+
+[data-theme="solarpunk"] .gradient-text {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Solarpunk grid — soft teal-green lines */
+[data-theme="solarpunk"] body::before {
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridPan 20s linear infinite;
+}
