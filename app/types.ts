@@ -21,7 +21,17 @@ export interface ClashRoyaleCard {
   };
 }
 
-export type GameType = "dota2" | "clashroyale";
+export interface MobileLegendsHero {
+  id: string;
+  uid: string;
+  name: string;
+  hero_class: string;
+  portrait: string;
+  laning?: string[];
+  speciality?: string[];
+}
+
+export type GameType = "dota2" | "clashroyale" | "mobilelegends";
 
 export interface GameHint {
   type: string;
@@ -34,6 +44,7 @@ export interface Player {
   isImposter: boolean;
   hero?: Hero;
   card?: ClashRoyaleCard;
+  mlHero?: MobileLegendsHero;
   clue?: string;
   hasSubmittedClue: boolean;
   assignedCardId?: string; // For headsup_online: unique card id
@@ -49,6 +60,7 @@ export interface GameRoom {
   players: Player[];
   currentHero?: Hero;
   currentCard?: ClashRoyaleCard;
+  currentMlHero?: MobileLegendsHero;
   gameType?: GameType;
   gameFormat?: GameFormat;
   hints?: GameHint[];

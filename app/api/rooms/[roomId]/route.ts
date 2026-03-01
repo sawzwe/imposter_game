@@ -4,6 +4,7 @@ import {
   GameRoom,
   Hero,
   ClashRoyaleCard,
+  MobileLegendsHero,
   GameType,
   GameHint,
 } from "../../../types";
@@ -76,6 +77,7 @@ export async function PATCH(
       let hints: GameHint[] = [];
       let randomHero: Hero | undefined;
       let randomCard: ClashRoyaleCard | undefined;
+      let randomMlHero: MobileLegendsHero | undefined;
 
       if (selectedGameType === "dota2") {
         // Fetch Dota 2 heroes
@@ -150,6 +152,27 @@ export async function PATCH(
         if (randomCard.rarity) {
           hints.push({ type: "Rarity", value: randomCard.rarity });
         }
+      } else if (selectedGameType === "mobilelegends") {
+        const mlResponse = await fetch(
+          `${request.nextUrl.origin}/api/mobile-legends/heroes`
+        );
+        if (!mlResponse.ok) {
+          throw new Error("Failed to fetch Mobile Legends heroes");
+        }
+        const mlData = await mlResponse.json();
+        const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+        if (mlHeroes.length === 0) {
+          throw new Error("No Mobile Legends heroes available");
+        }
+        randomMlHero =
+          mlHeroes[Math.floor(Math.random() * mlHeroes.length)];
+        hints = [{ type: "Class", value: randomMlHero.hero_class }];
+        if (randomMlHero.laning?.length) {
+          hints.push({
+            type: "Lane",
+            value: randomMlHero.laning.join(", "),
+          });
+        }
       }
 
       // Randomly select imposter
@@ -165,6 +188,10 @@ export async function PATCH(
           selectedGameType === "clashroyale" && index !== imposterIndex
             ? randomCard
             : undefined,
+        mlHero:
+          selectedGameType === "mobilelegends" && index !== imposterIndex
+            ? randomMlHero
+            : undefined,
         hasSubmittedClue: false,
         clue: undefined,
       }));
@@ -173,6 +200,7 @@ export async function PATCH(
         players: updatedPlayers,
         currentHero: randomHero,
         currentCard: randomCard,
+        currentMlHero: randomMlHero,
         gameType: selectedGameType,
         hints: room.hintsEnabled !== false ? hints : [], // Only set hints if enabled
         gameState: "playing",
@@ -223,6 +251,46 @@ export async function PATCH(
         }));
 
         const countdownEnd = Date.now() + 4000; // 3, 2, 1, Go
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup",
+          gameState: "headsup_countdown",
+          headsupCountdownEnd: countdownEnd,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
+
+      if (selectedGameType === "mobilelegends") {
+        const mlResponse = await fetch(
+          `${request.nextUrl.origin}/api/mobile-legends/heroes`
+        );
+        if (!mlResponse.ok) {
+          throw new Error("Failed to fetch Mobile Legends heroes");
+        }
+        const mlData = await mlResponse.json();
+        const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+        if (mlHeroes.length < numPlayers) {
+          throw new Error("Not enough heroes for all players");
+        }
+        const shuffled = [...mlHeroes].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const updatedPlayers = room.players.map((player, index) => ({
+          ...player,
+          isImposter: false,
+          hero: undefined,
+          card: undefined,
+          mlHero: assigned[index],
+          hasSubmittedClue: false,
+          clue: undefined,
+        }));
+
+        const countdownEnd = Date.now() + 4000;
 
         const updatedRoom = await updateRoom(roomId, {
           players: updatedPlayers,
@@ -390,6 +458,51 @@ export async function PATCH(
 
         return NextResponse.json({ room: updatedRoom });
       }
+
+      if (selectedGameType === "mobilelegends") {
+        const mlResponse = await fetch(
+          `${request.nextUrl.origin}/api/mobile-legends/heroes`
+        );
+        if (!mlResponse.ok) {
+          throw new Error("Failed to fetch Mobile Legends heroes");
+        }
+        const mlData = await mlResponse.json();
+        const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+        if (mlHeroes.length < numPlayers) {
+          throw new Error("Not enough heroes for all players");
+        }
+        const shuffled = [...mlHeroes].sort(() => Math.random() - 0.5);
+        const assigned = shuffled.slice(0, numPlayers);
+
+        const updatedPlayers = room.players.map((player, index) => {
+          const hero = assigned[index];
+          return {
+            ...player,
+            isImposter: false,
+            hero: undefined,
+            card: undefined,
+            mlHero: undefined,
+            assignedCardId: hero.uid,
+            assignedCardName: hero.name,
+            assignedCardImage: hero.portrait,
+            score: 0,
+            hasSubmittedClue: false,
+            clue: undefined,
+          };
+        });
+
+        const updatedRoom = await updateRoom(roomId, {
+          players: updatedPlayers,
+          gameType: selectedGameType,
+          gameFormat: "headsup_online",
+          gameState: "playing",
+          round: 1,
+          clues: [],
+          votes: [],
+        });
+
+        return NextResponse.json({ room: updatedRoom });
+      }
     }
 
     // Rotate card for a player (assign new card, increment score) — for headsup_online
@@ -453,6 +566,21 @@ export async function PATCH(
             id: String(picked.id),
             name: picked.name_english_loc || picked.name,
             image: `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`,
+          };
+        } else if (selectedGameType === "mobilelegends") {
+          const mlResponse = await fetch(
+            `${request.nextUrl.origin}/api/mobile-legends/heroes`
+          );
+          if (!mlResponse.ok) throw new Error("Failed to fetch heroes");
+          const mlData = await mlResponse.json();
+          const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+          const available = mlHeroes.filter((h) => !usedIds.has(h.uid));
+          if (available.length === 0) return { id: "", name: "" };
+          const picked = available[Math.floor(Math.random() * available.length)];
+          return {
+            id: picked.uid,
+            name: picked.name,
+            image: picked.portrait,
           };
         } else {
           const cardsResponse = await fetch(
@@ -671,12 +799,14 @@ export async function PATCH(
         votingStartTime: undefined,
         currentHero: undefined,
         currentCard: undefined,
+        currentMlHero: undefined,
         hints: undefined,
         players: room.players.map((p) => ({
           ...p,
           isImposter: false,
           hero: undefined,
           card: undefined,
+          mlHero: undefined,
           clue: undefined,
           hasSubmittedClue: false,
         })),
@@ -687,6 +817,7 @@ export async function PATCH(
       let hints: GameHint[] = [];
       let randomHero: Hero | undefined;
       let randomCard: ClashRoyaleCard | undefined;
+      let randomMlHero: MobileLegendsHero | undefined;
 
       if (selectedGameType === "dota2") {
         // Fetch Dota 2 heroes
@@ -761,6 +892,27 @@ export async function PATCH(
         if (randomCard.rarity) {
           hints.push({ type: "Rarity", value: randomCard.rarity });
         }
+      } else if (selectedGameType === "mobilelegends") {
+        const mlResponse = await fetch(
+          `${request.nextUrl.origin}/api/mobile-legends/heroes`
+        );
+        if (!mlResponse.ok) {
+          throw new Error("Failed to fetch Mobile Legends heroes");
+        }
+        const mlData = await mlResponse.json();
+        const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+        if (mlHeroes.length === 0) {
+          throw new Error("No Mobile Legends heroes available");
+        }
+        randomMlHero =
+          mlHeroes[Math.floor(Math.random() * mlHeroes.length)];
+        hints = [{ type: "Class", value: randomMlHero.hero_class }];
+        if (randomMlHero.laning?.length) {
+          hints.push({
+            type: "Lane",
+            value: randomMlHero.laning.join(", "),
+          });
+        }
       }
 
       // Randomly select new imposter
@@ -778,12 +930,17 @@ export async function PATCH(
           selectedGameType === "clashroyale" && index !== imposterIndex
             ? randomCard
             : undefined,
+        mlHero:
+          selectedGameType === "mobilelegends" && index !== imposterIndex
+            ? randomMlHero
+            : undefined,
       }));
 
       const finalRoom = await updateRoom(roomId, {
         players: finalPlayers,
         currentHero: randomHero,
         currentCard: randomCard,
+        currentMlHero: randomMlHero,
         hints: room.hintsEnabled !== false ? hints : [], // Only set hints if enabled
       });
 
@@ -869,6 +1026,7 @@ export async function PATCH(
         headsupCountdownEnd: undefined,
         currentHero: undefined,
         currentCard: undefined,
+        currentMlHero: undefined,
         gameType: undefined,
         gameFormat: undefined,
         hints: undefined,
@@ -877,6 +1035,7 @@ export async function PATCH(
           isImposter: false,
           hero: undefined,
           card: undefined,
+          mlHero: undefined,
           assignedCardId: undefined,
           assignedCardName: undefined,
           assignedCardImage: undefined,

@@ -73,6 +73,16 @@ function ClashRoyaleEmote(props: AssetProps) {
   );
 }
 
+function MobileLegendsLogo(props: AssetProps) {
+  return (
+    <img
+      src={`${BASE}/mobile_legends/mlbb-logo_2.png`}
+      alt="Mobile Legends"
+      {...props}
+    />
+  );
+}
+
 export {
   DotaLogo,
   DotaGreen,
@@ -83,4 +93,5 @@ export {
   ClashRoyale,
   ClashRoyaleCrown,
   ClashRoyaleEmote,
+  MobileLegendsLogo,
 };

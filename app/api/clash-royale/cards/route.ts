@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { getSupabaseClient } from "../../../lib/supabaseClient";
+import { getSupabaseServer } from "../../../lib/supabaseServer";
 
 export async function GET(request: NextRequest) {
   try {
     // Try to get cards from Supabase first (cached)
-    const supabase = await getSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     if (supabase) {
       const { data, error } = await supabase

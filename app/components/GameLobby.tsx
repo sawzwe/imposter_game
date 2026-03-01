@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
-import { DotaLogo, ClashRoyaleEmote } from "./assets";
+import { DotaLogo, ClashRoyaleEmote, MobileLegendsLogo } from "./assets";
 import { useToast } from "./ToastContext";
 import { GameRoom, GameType, GameFormat } from "../types";
 
@@ -311,7 +311,7 @@ export default function GameLobby({
               <h2 className="mb-3 font-display text-lg font-bold tracking-wide text-[var(--text)]">
                 Select Game
               </h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setSelectedGame("dota2")}
                   className={`rounded-xl border-2 p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg ${
@@ -344,6 +344,22 @@ export default function GameLobby({
                   </div>
                   <div className="text-sm text-[var(--muted)]">Cards</div>
                 </button>
+                <button
+                  onClick={() => setSelectedGame("mobilelegends")}
+                  className={`rounded-xl border-2 p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-lg ${
+                    selectedGame === "mobilelegends"
+                      ? "border-[var(--blue)] bg-[#0d1220] shadow-[0_0_24px_var(--blue-glow)]"
+                      : "border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]"
+                  }`}
+                >
+                  <div className="mb-2 flex h-14 items-center justify-center">
+                    <MobileLegendsLogo className="h-12 w-12 object-contain" />
+                  </div>
+                  <div className="font-display font-bold text-[var(--text)]">
+                    Mobile Legends
+                  </div>
+                  <div className="text-sm text-[var(--muted)]">Heroes</div>
+                </button>
               </div>
             </div>
             {gameFormat === "headsup" && onStartHeadsUp ? (
@@ -358,7 +374,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start Heads Up · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             ) : gameFormat === "headsup_online" && onStartHeadsUpOnline ? (
@@ -373,7 +389,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Online · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start Online · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             ) : (
@@ -388,7 +404,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Imposter · {selectedGame === "dota2" ? "Dota 2" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start Imposter · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             )}

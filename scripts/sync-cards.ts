@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { resolve } from "path";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 
 // Load env vars from .env.local first, then .env
 const envLocalPath = resolve(process.cwd(), ".env.local");
@@ -110,6 +110,81 @@ async function syncClashRoyaleCards() {
   }
 }
 
+async function syncMobileLegendsHeroes() {
+  console.log("🔄 Loading Mobile Legends heroes from hero-meta-final.json...");
+
+  try {
+    const filePath = resolve(process.cwd(), "public", "data", "hero-meta-final.json");
+    if (!existsSync(filePath)) {
+      throw new Error("hero-meta-final.json not found in public/data/");
+    }
+
+    const fileContent = readFileSync(filePath, "utf-8");
+    const json = JSON.parse(fileContent);
+    const rawData: any[] = json.data || [];
+
+    const heroes = rawData
+      .filter(
+        (h: any) =>
+          h.hero_name &&
+          h.hero_name !== "None" &&
+          h.uid &&
+          h.uid !== "null" &&
+          h.portrait
+      )
+      .map((h: any) => ({
+        id: h.id || h.uid,
+        uid: h.uid,
+        name: h.hero_name,
+        hero_class: h.class || "Unknown",
+        portrait: h.portrait,
+        laning: h.laning,
+        speciality: h.speciality,
+      }));
+
+    if (heroes.length === 0) {
+      throw new Error("No valid heroes in JSON");
+    }
+
+    console.log(`✅ Loaded ${heroes.length} heroes`);
+
+    // Clear existing heroes
+    const { error: deleteError } = await supabase
+      .from("mobile_legends_heroes")
+      .delete()
+      .neq("id", 0);
+
+    if (deleteError) {
+      console.warn("⚠️  Warning clearing heroes:", deleteError.message);
+    } else {
+      console.log("🗑️  Cleared existing Mobile Legends heroes");
+    }
+
+    // Insert all heroes in batches
+    const batchSize = 50;
+    for (let i = 0; i < heroes.length; i += batchSize) {
+      const batch = heroes.slice(i, i + batchSize);
+      const heroesToInsert = batch.map((hero: any) => ({
+        data: hero,
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from("mobile_legends_heroes")
+        .insert(heroesToInsert);
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    console.log(`✅ Stored ${heroes.length} heroes in Supabase`);
+  } catch (error: any) {
+    console.error("❌ Error syncing Mobile Legends heroes:", error.message);
+    throw error;
+  }
+}
+
 async function syncDotaHeroes() {
   console.log("🔄 Fetching Dota 2 heroes from API...");
 
@@ -176,17 +251,17 @@ async function main() {
     const results = await Promise.allSettled([
       syncClashRoyaleCards(),
       syncDotaHeroes(),
+      syncMobileLegendsHeroes(),
     ]);
 
+    const names = ["Clash Royale", "Dota 2", "Mobile Legends"];
     const hasErrors = results.some((r) => r.status === "rejected");
 
     if (hasErrors) {
       console.log("\n⚠️  Some syncs failed, but continuing...");
       results.forEach((result, index) => {
         if (result.status === "rejected") {
-          console.error(
-            `  - ${index === 0 ? "Clash Royale" : "Dota 2"}: ${result.reason}`
-          );
+          console.error(`  - ${names[index]}: ${result.reason}`);
         }
       });
     }

@@ -99,7 +99,9 @@ export default function GameScreen({
                   to blend in by giving a clue that could apply to any{" "}
                   {gameRoom.gameType === "clashroyale"
                     ? "Clash Royale card"
-                    : "Dota 2 hero"}
+                    : gameRoom.gameType === "mobilelegends"
+                      ? "Mobile Legends hero"
+                      : "Dota 2 hero"}
                   !
                 </p>
                 {gameRoom.hintsEnabled !== false &&
@@ -122,8 +124,8 @@ export default function GameScreen({
                 {gameRoom.hintsEnabled === false && (
                   <div className="mt-3 rounded-xl bg-[var(--red)]/10 border border-[var(--red)]/30 p-3">
                     <p className="text-sm font-semibold text-[var(--red)]">
-                      ⚠️ Hints are disabled - you have no clues about the secret{" "}
-                      {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
+                      ⚠️ Hints are disabled - you have no clues about the
+                      secret {gameRoom.gameType === "clashroyale" ? "card" : "hero"}!
                     </p>
                   </div>
                 )}
@@ -143,13 +145,23 @@ export default function GameScreen({
                         className="h-20 w-20 rounded-xl object-cover border border-[var(--border)]"
                       />
                     )}
+                  {gameRoom.gameType === "mobilelegends" &&
+                    gameRoom.currentMlHero?.portrait && (
+                      <img
+                        src={gameRoom.currentMlHero.portrait}
+                        alt={gameRoom.currentMlHero.name}
+                        className="h-20 w-20 rounded-xl object-cover border border-[var(--border)]"
+                      />
+                    )}
                   <div>
                     <p className="text-lg font-bold text-[var(--text-on-dark)]">
                       Secret{" "}
                       {gameRoom.gameType === "clashroyale" ? "Card" : "Hero"}:{" "}
                       {gameRoom.gameType === "clashroyale"
                         ? gameRoom.currentCard?.name
-                        : gameRoom.currentHero?.name_english_loc}
+                        : gameRoom.gameType === "mobilelegends"
+                          ? gameRoom.currentMlHero?.name
+                          : gameRoom.currentHero?.name_english_loc}
                     </p>
                     {gameRoom.gameType === "clashroyale" &&
                       gameRoom.currentCard && (
@@ -162,6 +174,13 @@ export default function GameScreen({
                               {gameRoom.currentCard.rarity}
                             </>
                           )}
+                        </div>
+                      )}
+                    {gameRoom.gameType === "mobilelegends" &&
+                      gameRoom.currentMlHero && (
+                        <div className="mt-1 text-sm text-[var(--muted-on-dark)]">
+                          <span className="font-medium">Class:</span>{" "}
+                          {gameRoom.currentMlHero.hero_class}
                         </div>
                       )}
                   </div>
@@ -427,13 +446,23 @@ export default function GameScreen({
                     className="h-24 w-24 rounded-xl object-cover border border-[var(--border)]"
                   />
                 )}
+              {gameRoom.gameType === "mobilelegends" &&
+                gameRoom.currentMlHero?.portrait && (
+                  <img
+                    src={gameRoom.currentMlHero.portrait}
+                    alt={gameRoom.currentMlHero.name}
+                    className="h-24 w-24 rounded-xl object-cover border border-[var(--border)]"
+                  />
+                )}
               <div>
                 <p className="text-lg font-semibold text-[var(--text)]">
                   The secret{" "}
                   {gameRoom.gameType === "clashroyale" ? "card" : "hero"} was:{" "}
                   {gameRoom.gameType === "clashroyale"
                     ? gameRoom.currentCard?.name
-                    : gameRoom.currentHero?.name_english_loc}
+                    : gameRoom.gameType === "mobilelegends"
+                      ? gameRoom.currentMlHero?.name
+                      : gameRoom.currentHero?.name_english_loc}
                 </p>
               </div>
             </div>

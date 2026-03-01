@@ -21,3 +21,11 @@ $$ LANGUAGE plpgsql;
 -- Optional: Set up a cron job to run cleanup (requires pg_cron extension)
 -- SELECT cron.schedule('cleanup-old-rooms', '0 * * * *', 'SELECT cleanup_old_rooms()');
 
+-- Mobile Legends heroes cache (run: npm run sync-cards to populate)
+CREATE TABLE IF NOT EXISTS mobile_legends_heroes (
+  id SERIAL PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_mobile_legends_heroes_id ON mobile_legends_heroes(id);
+
