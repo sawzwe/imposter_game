@@ -5,15 +5,19 @@ import { GameRoom, Player } from "../types";
 interface HeadsUpOnlineProps {
   gameRoom: GameRoom;
   localPlayerId: string;
+  isHost?: boolean;
   onRotateCard: (targetPlayerId: string) => Promise<void>;
   onLeaveRoom: () => void;
+  onBackToLobby?: () => void;
 }
 
 export default function HeadsUpOnline({
   gameRoom,
   localPlayerId,
+  isHost,
   onRotateCard,
   onLeaveRoom,
+  onBackToLobby,
 }: HeadsUpOnlineProps) {
   const localPlayer = gameRoom.players.find((p) => p.id === localPlayerId);
 
@@ -99,12 +103,22 @@ export default function HeadsUpOnline({
           })}
         </div>
 
-        <button
-          onClick={onLeaveRoom}
-          className="mt-8 w-full rounded-xl border border-[var(--border)] bg-transparent py-3 font-semibold text-[var(--muted)] transition-colors hover:border-[var(--red)] hover:bg-[var(--red)]/10 hover:text-[var(--red)]"
-        >
-          Leave Room
-        </button>
+        <div className="mt-8 space-y-3">
+          {isHost && onBackToLobby && (
+            <button
+              onClick={onBackToLobby}
+              className="w-full rounded-xl border border-[var(--blue)] bg-transparent py-3 font-semibold text-[var(--blue)] transition-colors hover:bg-[var(--blue)]/10"
+            >
+              ← Back to Lobby (change mode)
+            </button>
+          )}
+          <button
+            onClick={onLeaveRoom}
+            className="w-full rounded-xl border border-[var(--border)] bg-transparent py-3 font-semibold text-[var(--muted)] transition-colors hover:border-[var(--red)] hover:bg-[var(--red)]/10 hover:text-[var(--red)]"
+          >
+            Leave Room
+          </button>
+        </div>
       </div>
     </div>
   );

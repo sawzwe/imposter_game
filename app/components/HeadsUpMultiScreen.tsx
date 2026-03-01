@@ -13,13 +13,17 @@ function getHeroImageUrl(hero: Hero): string {
 interface HeadsUpMultiScreenProps {
   gameRoom: GameRoom;
   playerId: string;
+  isHost?: boolean;
   onLeaveRoom?: () => void;
+  onBackToLobby?: () => void;
 }
 
 export default function HeadsUpMultiScreen({
   gameRoom,
   playerId,
+  isHost,
   onLeaveRoom,
+  onBackToLobby,
 }: HeadsUpMultiScreenProps) {
   const currentPlayer = gameRoom.players.find((p) => p.id === playerId);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -83,7 +87,15 @@ export default function HeadsUpMultiScreen({
   return (
     <div className="relative z-10 flex min-h-screen flex-col p-4 md:p-6">
       <LandscapeOrientationPrompt />
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        {isHost && onBackToLobby && (
+          <button
+            onClick={onBackToLobby}
+            className="rounded-lg border border-[var(--blue)] px-3 py-1.5 text-sm font-semibold text-[var(--blue)] hover:bg-[var(--blue)]/10"
+          >
+            ← Lobby
+          </button>
+        )}
         {onLeaveRoom && (
           <button
             onClick={onLeaveRoom}
