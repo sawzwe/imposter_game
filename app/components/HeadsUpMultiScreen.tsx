@@ -45,14 +45,19 @@ export default function HeadsUpMultiScreen({
 
   const myHero = currentPlayer.hero;
   const myCard = currentPlayer.card;
+  const myMlHero = currentPlayer.mlHero;
   const displayName =
     gameRoom.gameType === "dota2"
       ? myHero?.name_english_loc
-      : myCard?.name;
+      : gameRoom.gameType === "mobilelegends"
+        ? myMlHero?.name
+        : myCard?.name;
   const imageUrl =
     gameRoom.gameType === "dota2" && myHero
       ? getHeroImageUrl(myHero)
-      : myCard?.iconUrls?.medium;
+      : gameRoom.gameType === "mobilelegends" && myMlHero
+        ? myMlHero.portrait
+        : myCard?.iconUrls?.medium;
 
   // Countdown phase
   if (isCountdownPhase && countdown !== null && countdown > 0) {
@@ -112,7 +117,9 @@ export default function HeadsUpMultiScreen({
           )}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
-              {gameRoom.gameType === "dota2" ? "Hero" : "Card"}
+              {gameRoom.gameType === "dota2" || gameRoom.gameType === "mobilelegends"
+                ? "Hero"
+                : "Card"}
             </p>
             <h2 className="font-display text-4xl font-bold text-[var(--text-on-dark)] md:text-5xl">
               {displayName || "???"}

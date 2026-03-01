@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useToast } from "./ToastContext";
 import LandscapeOrientationPrompt from "./LandscapeOrientationPrompt";
-import { Hero, ClashRoyaleCard } from "../types";
+import { Hero, ClashRoyaleCard, MobileLegendsHero } from "../types";
 import { GameType } from "../types";
 
 // Dota 2 hero image URL from internal name (npc_dota_hero_antimage -> antimage)
@@ -19,7 +19,10 @@ interface HeadsUpGameProps {
 
 export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   const [currentCard, setCurrentCard] = useState<
-    (Hero & { type: "hero" }) | (ClashRoyaleCard & { type: "card" }) | null
+    | (Hero & { type: "hero" })
+    | (ClashRoyaleCard & { type: "card" })
+    | (MobileLegendsHero & { type: "ml" })
+    | null
   >(null);
   const [round, setRound] = useState(0);
   const [gotItCount, setGotItCount] = useState(0);
@@ -47,6 +50,15 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
     return { ...card, type: "card" as const };
   }, []);
 
+  const fetchRandomMlHero = useCallback(async () => {
+    const res = await fetch("/api/mobile-legends/heroes");
+    const data = await res.json();
+    const items = data.items || [];
+    if (items.length === 0) return null;
+    const hero = items[Math.floor(Math.random() * items.length)];
+    return { ...hero, type: "ml" as const };
+  }, []);
+
   const loadNextCard = useCallback(async () => {
     const thisFetchId = ++fetchIdRef.current;
     setIsLoading(true);
@@ -54,7 +66,9 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
       const item =
         gameType === "dota2"
           ? await fetchRandomHero()
-          : await fetchRandomCard();
+          : gameType === "mobilelegends"
+            ? await fetchRandomMlHero()
+            : await fetchRandomCard();
       // Ignore stale responses (e.g. from React Strict Mode double-mount)
       if (thisFetchId !== fetchIdRef.current) return;
       if (item) {
@@ -72,7 +86,7 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
         setIsLoading(false);
       }
     }
-  }, [gameType, fetchRandomHero, fetchRandomCard, showToast]);
+  }, [gameType, fetchRandomHero, fetchRandomCard, fetchRandomMlHero, showToast]);
 
   useEffect(() => {
     if (round === 0) {
@@ -94,12 +108,16 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
   const displayName =
     currentCard?.type === "hero"
       ? (currentCard as Hero).name_english_loc
-      : (currentCard as ClashRoyaleCard)?.name;
+      : currentCard?.type === "ml"
+        ? (currentCard as MobileLegendsHero).name
+        : (currentCard as ClashRoyaleCard)?.name;
 
   const imageUrl =
     currentCard?.type === "hero"
       ? getHeroImageUrl(currentCard as Hero)
-      : (currentCard as ClashRoyaleCard)?.iconUrls?.medium;
+      : currentCard?.type === "ml"
+        ? (currentCard as MobileLegendsHero).portrait
+        : (currentCard as ClashRoyaleCard)?.iconUrls?.medium;
 
   if (round === 0 && isLoading) {
     return (
@@ -137,7 +155,9 @@ export default function HeadsUpGame({ gameType }: HeadsUpGameProps) {
           )}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <p className="text-xs font-medium uppercase tracking-widest text-[var(--muted-on-dark)]">
-              {gameType === "dota2" ? "Hero" : "Card"}
+              {gameType === "dota2" || gameType === "mobilelegends"
+                ? "Hero"
+                : "Card"}
             </p>
             <h2 className="font-display text-2xl font-bold text-[var(--text-on-dark)] md:text-4xl">
               {displayName || "Loading..."}

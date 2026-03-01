@@ -10,7 +10,7 @@ import GameScreen from "./components/GameScreen";
 import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
 import HeadsUpOnline from "./components/HeadsUpOnline";
 import { useToast } from "./components/ToastContext";
-import { GameRoom } from "./types";
+import { GameRoom, GameType } from "./types";
 import { getUserFriendlyError } from "./lib/errorHandler";
 
 export default function HomeClient() {
@@ -357,7 +357,7 @@ export default function HomeClient() {
     }
   };
 
-  const startGame = async (gameType: "dota2" | "clashroyale") => {
+  const startGame = async (gameType: GameType) => {
     if (!gameRoom || gameRoom.players.length < 3) {
       setError("You need at least 3 players to start the game!");
       return;
@@ -396,7 +396,7 @@ export default function HomeClient() {
     }
   };
 
-  const startHeadsUpOnline = async (gameType: "dota2" | "clashroyale") => {
+  const startHeadsUpOnline = async (gameType: GameType) => {
     if (!gameRoom || gameRoom.players.length < 2) {
       setError("You need at least 2 players to start!");
       return;
@@ -461,7 +461,7 @@ export default function HomeClient() {
     }
   };
 
-  const startHeadsUp = async (gameType: "dota2" | "clashroyale") => {
+  const startHeadsUp = async (gameType: GameType) => {
     if (!gameRoom || gameRoom.players.length < 3) {
       setError("You need at least 3 players to start!");
       return;

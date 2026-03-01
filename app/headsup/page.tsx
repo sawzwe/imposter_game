@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { DotaLogo, ClashRoyaleEmote } from "../components/assets";
+import { DotaLogo, ClashRoyaleEmote, MobileLegendsLogo } from "../components/assets";
 
 export default function HeadsUpSelectPage() {
   return (
@@ -12,7 +12,7 @@ export default function HeadsUpSelectPage() {
       <p className="mb-8 text-center text-sm text-[var(--muted)]">
         Hold device to forehead. Others see the card. Ask yes/no questions!
       </p>
-      <div className="grid w-full max-w-md grid-cols-2 gap-4">
+      <div className="grid w-full max-w-md grid-cols-2 gap-4 sm:grid-cols-3">
         <Link
           href="/headsup/dota"
           className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
@@ -36,6 +36,18 @@ export default function HeadsUpSelectPage() {
             Clash Royale
           </span>
           <span className="mt-1 text-sm text-[var(--muted)]">Cards</span>
+        </Link>
+        <Link
+          href="/headsup/mobile-legends"
+          className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+        >
+          <div className="mb-3 flex h-20 w-20 items-center justify-center">
+            <MobileLegendsLogo className="h-16 w-16 transition-transform duration-300 group-hover:scale-110 object-contain" />
+          </div>
+          <span className="font-display text-xl font-bold text-[var(--text)]">
+            Mobile Legends
+          </span>
+          <span className="mt-1 text-sm text-[var(--muted)]">Heroes</span>
         </Link>
       </div>
       <Link
