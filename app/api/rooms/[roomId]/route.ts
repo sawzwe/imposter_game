@@ -971,6 +971,28 @@ export async function PATCH(
       return NextResponse.json({ room: updatedRoom });
     }
 
+    if (action === "leaveRoom") {
+      if (!playerId) {
+        return NextResponse.json(
+          { error: "Player ID is required" },
+          { status: 400 }
+        );
+      }
+
+      const remainingPlayers = room.players.filter((p) => p.id !== playerId);
+
+      // If room is now empty, delete it
+      if (remainingPlayers.length === 0) {
+        await updateRoom(roomId, { players: [] });
+        return NextResponse.json({ room: null });
+      }
+
+      const updatedRoom = await updateRoom(roomId, {
+        players: remainingPlayers,
+      });
+      return NextResponse.json({ room: updatedRoom });
+    }
+
     if (action === "kickPlayer") {
       if (!playerId || !targetPlayerId) {
         return NextResponse.json(

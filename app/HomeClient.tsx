@@ -38,12 +38,11 @@ export default function HomeClient() {
     return roomId;
   };
 
-  const leaveRoom = useCallback(() => {
+  const clearLocalRoomState = useCallback(() => {
     localStorage.removeItem("roomId");
     setGameRoom(null);
     setRoomCode("");
     setError(null);
-    // Clear URL if it has room parameter
     if (
       typeof window !== "undefined" &&
       window.location.search.includes("room=")
@@ -51,6 +50,31 @@ export default function HomeClient() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  const leaveRoom = useCallback(
+    async (roomId?: string) => {
+      const targetRoomId = roomId || localStorage.getItem("roomId");
+      const currentPlayerId = localStorage.getItem("playerId");
+
+      if (targetRoomId && currentPlayerId) {
+        try {
+          await fetch(`/api/rooms/${targetRoomId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "leaveRoom",
+              playerId: currentPlayerId,
+            }),
+          });
+        } catch {
+          // Ignore errors — still clear local state
+        }
+      }
+
+      clearLocalRoomState();
+    },
+    [clearLocalRoomState],
+  );
 
   // Helper function to fetch room state
   const fetchRoomState = useCallback(
@@ -67,8 +91,8 @@ export default function HomeClient() {
             );
 
             if (!playerStillInRoom) {
-              // Player was kicked, return to home
-              leaveRoom();
+              // Player was kicked — server already removed them, just clear local state
+              clearLocalRoomState();
               return null;
             }
 
@@ -86,8 +110,8 @@ export default function HomeClient() {
             return null;
           }
         } else if (response.status === 404) {
-          // Room not found, clear state
-          leaveRoom();
+          // Room not found, clear state (no server call needed)
+          clearLocalRoomState();
         }
       } catch (error) {
         console.error("Error fetching room:", error);
@@ -149,14 +173,22 @@ export default function HomeClient() {
     }
   };
 
-  // Derive playerId: use auth user id when logged in, else localStorage or new UUID
+  // Derive playerId: must match ^player_[a-zA-Z0-9_]+$ for API validation
+  const toValidPlayerId = (raw: string) => {
+    const safe = raw.replace(/[^a-zA-Z0-9_]/g, "_");
+    return safe.startsWith("player_") ? safe : `player_${safe}`;
+  };
+
   useEffect(() => {
-    const id =
+    const raw =
       user?.id ??
-      (typeof window !== "undefined" ? localStorage.getItem("playerId") : null) ??
+      (typeof window !== "undefined"
+        ? localStorage.getItem("playerId")
+        : null) ??
       (typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
-        : `player_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
+        : `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
+    const id = toValidPlayerId(raw);
     setPlayerId(id);
     if (typeof window !== "undefined" && !user) {
       localStorage.setItem("playerId", id);
@@ -270,12 +302,7 @@ export default function HomeClient() {
     }, getPollInterval());
 
     return () => clearInterval(pollInterval);
-  }, [
-    gameRoom?.id,
-    gameRoom?.gameState,
-    gameRoom?.gameFormat,
-    fetchRoomState,
-  ]);
+  }, [gameRoom?.id, gameRoom?.gameState, gameRoom?.gameFormat, fetchRoomState]);
 
   const createRoom = async () => {
     if (!playerName.trim()) {
@@ -735,43 +762,43 @@ export default function HomeClient() {
           onClose={() => setAuthModalOpen(false)}
         />
         <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-        <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
-          Imposter Game
-        </h1>
-        <p className="mb-8 text-center text-sm text-[var(--muted)]">
-          Play with Dota 2 Heroes or Clash Royale Cards
-        </p>
-        <div className="grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-          <button
-            onClick={() => setShowGameSelect(false)}
-            className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-          >
-            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-              🎭
-            </span>
-            <span className="font-display text-xl font-bold text-[var(--text)]">
-              Imposter
-            </span>
-            <span className="mt-1 text-sm text-[var(--muted)]">
-              Multiplayer · Find the imposter
-            </span>
-          </button>
-          <Link
-            href="/headsup"
-            className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-          >
-            <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-              👆
-            </span>
-            <span className="font-display text-xl font-bold text-[var(--text)]">
-              Heads Up
-            </span>
-            <span className="mt-1 text-sm text-[var(--muted)]">
-              Single device · Ask questions
-            </span>
-          </Link>
+          <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
+            Imposter Game
+          </h1>
+          <p className="mb-8 text-center text-sm text-[var(--muted)]">
+            Play with Dota 2 Heroes or Clash Royale Cards
+          </p>
+          <div className="grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+            <button
+              onClick={() => setShowGameSelect(false)}
+              className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+            >
+              <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+                🎭
+              </span>
+              <span className="font-display text-xl font-bold text-[var(--text)]">
+                Imposter
+              </span>
+              <span className="mt-1 text-sm text-[var(--muted)]">
+                Multiplayer · Find the imposter
+              </span>
+            </button>
+            <Link
+              href="/headsup"
+              className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
+            >
+              <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
+                👆
+              </span>
+              <span className="font-display text-xl font-bold text-[var(--text)]">
+                Heads Up
+              </span>
+              <span className="mt-1 text-sm text-[var(--muted)]">
+                Single device · Ask questions
+              </span>
+            </Link>
+          </div>
         </div>
-      </div>
       </>
     );
   }
@@ -785,132 +812,132 @@ export default function HomeClient() {
           onClose={() => setAuthModalOpen(false)}
         />
         <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-          {!roomIdFromUrl && (
-            <button
-              onClick={() => setShowGameSelect(true)}
-              className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
-            >
-              ← Back
-            </button>
-          )}
-          <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
-            Imposter Game
-          </h1>
-          <p className="mb-6 text-center text-sm text-[var(--muted)]">
-            Play with Dota 2 Heroes or Clash Royale Cards
-          </p>
+          <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
+            {!roomIdFromUrl && (
+              <button
+                onClick={() => setShowGameSelect(true)}
+                className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
+              >
+                ← Back
+              </button>
+            )}
+            <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
+              Imposter Game
+            </h1>
+            <p className="mb-6 text-center text-sm text-[var(--muted)]">
+              Play with Dota 2 Heroes or Clash Royale Cards
+            </p>
 
-          {error && (
-            <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                Your Name
-              </label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !isLoading) handleSubmit();
-                }}
-                disabled={isLoading}
-              />
-            </div>
-
-            {roomIdFromUrl ? (
-              <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
-                <p className="mb-2 text-sm font-medium text-[var(--green)]">
-                  Invite link detected
-                </p>
-                <p className="text-xs text-[var(--muted)]">
-                  Room: {roomIdFromUrl.toUpperCase()}
-                </p>
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
+                <p className="text-sm font-medium">{error}</p>
               </div>
-            ) : (
+            )}
+
+            <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                  Room Code{" "}
-                  <span className="text-[var(--muted)]">(optional)</span>
+                  Your Name
                 </label>
                 <input
                   type="text"
-                  value={roomCode}
-                  onChange={(e) =>
-                    setRoomCode(
-                      e.target.value
-                        .toUpperCase()
-                        .replace(/[^A-Z0-9]/g, "")
-                        .slice(0, 6),
-                    )
-                  }
-                  placeholder="Enter 6-digit code"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                  maxLength={6}
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isLoading) handleSubmit();
+                  }}
                   disabled={isLoading}
                 />
-                <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
-                  Leave empty to create a new room
-                </p>
               </div>
-            )}
 
-            {roomIdFromUrl ? (
-              <button
-                onClick={() => joinRoom(roomIdFromUrl)}
-                disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Joining...
-                  </>
-                ) : (
-                  "Join Room"
-                )}
-              </button>
-            ) : roomCode.trim().length === 6 ? (
-              <button
-                onClick={() => joinRoom(roomCode.trim())}
-                disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Joining...
-                  </>
-                ) : (
-                  "Join Room"
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={createRoom}
-                disabled={isLoading || !playerName.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create Room"
-                )}
-              </button>
-            )}
+              {roomIdFromUrl ? (
+                <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
+                  <p className="mb-2 text-sm font-medium text-[var(--green)]">
+                    Invite link detected
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    Room: {roomIdFromUrl.toUpperCase()}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--text)]">
+                    Room Code{" "}
+                    <span className="text-[var(--muted)]">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={roomCode}
+                    onChange={(e) =>
+                      setRoomCode(
+                        e.target.value
+                          .toUpperCase()
+                          .replace(/[^A-Z0-9]/g, "")
+                          .slice(0, 6),
+                      )
+                    }
+                    placeholder="Enter 6-digit code"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                    maxLength={6}
+                    disabled={isLoading}
+                  />
+                  <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
+                    Leave empty to create a new room
+                  </p>
+                </div>
+              )}
+
+              {roomIdFromUrl ? (
+                <button
+                  onClick={() => joinRoom(roomIdFromUrl)}
+                  disabled={isLoading || !playerName.trim()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Joining...
+                    </>
+                  ) : (
+                    "Join Room"
+                  )}
+                </button>
+              ) : roomCode.trim().length === 6 ? (
+                <button
+                  onClick={() => joinRoom(roomCode.trim())}
+                  disabled={isLoading || !playerName.trim()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Joining...
+                    </>
+                  ) : (
+                    "Join Room"
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={createRoom}
+                  disabled={isLoading || !playerName.trim()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Room"
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </>
     );
   }
@@ -927,13 +954,15 @@ export default function HomeClient() {
           onClose={() => setAuthModalOpen(false)}
         />
         <HeadsUpMultiScreen
-        gameRoom={gameRoom}
-        playerId={playerId}
-        onLeaveRoom={() => {
-          showToast("Left the room");
-          leaveRoom();
-        }}
-      />
+          gameRoom={gameRoom}
+          playerId={playerId}
+          isHost={gameRoom.players[0]?.id === playerId}
+          onLeaveRoom={() => {
+            showToast("Left the room");
+            leaveRoom(gameRoom.id);
+          }}
+          onBackToLobby={resetGame}
+        />
       </>
     );
   }
@@ -950,14 +979,16 @@ export default function HomeClient() {
           onClose={() => setAuthModalOpen(false)}
         />
         <HeadsUpOnline
-        gameRoom={gameRoom}
-        localPlayerId={playerId}
-        onRotateCard={rotateCard}
-        onLeaveRoom={() => {
-          showToast("Left the room");
-          leaveRoom();
-        }}
-      />
+          gameRoom={gameRoom}
+          localPlayerId={playerId}
+          isHost={gameRoom.players[0]?.id === playerId}
+          onRotateCard={rotateCard}
+          onLeaveRoom={() => {
+            showToast("Left the room");
+            leaveRoom(gameRoom.id);
+          }}
+          onBackToLobby={resetGame}
+        />
       </>
     );
   }
@@ -971,22 +1002,22 @@ export default function HomeClient() {
           onClose={() => setAuthModalOpen(false)}
         />
         <GameLobby
-        gameRoom={gameRoom}
-        playerId={playerId}
-        playerName={playerName}
-        onAddPlayer={addPlayer}
-        onStartGame={startGame}
-        onStartHeadsUp={startHeadsUp}
-        onStartHeadsUpOnline={startHeadsUpOnline}
-        isStarting={isLoading}
-        isAddingPlayer={isAddingPlayer}
-        onLeaveRoom={() => {
-          showToast("Left the room");
-          leaveRoom();
-        }}
-        onToggleHints={toggleHints}
-        onKickPlayer={kickPlayer}
-      />
+          gameRoom={gameRoom}
+          playerId={playerId}
+          playerName={playerName}
+          onAddPlayer={addPlayer}
+          onStartGame={startGame}
+          onStartHeadsUp={startHeadsUp}
+          onStartHeadsUpOnline={startHeadsUpOnline}
+          isStarting={isLoading}
+          isAddingPlayer={isAddingPlayer}
+          onLeaveRoom={() => {
+            showToast("Left the room");
+            leaveRoom(gameRoom.id);
+          }}
+          onToggleHints={toggleHints}
+          onKickPlayer={kickPlayer}
+        />
       </>
     );
   }
@@ -999,16 +1030,16 @@ export default function HomeClient() {
         onClose={() => setAuthModalOpen(false)}
       />
       <GameScreen
-      gameRoom={gameRoom}
-      playerId={playerId}
-      playerName={playerName}
-      onSubmitClue={submitClue}
-      onVote={vote}
-      onResetGame={resetGame}
-      onSkipPhase={skipPhase}
-      onNextRound={nextRound}
-      onLeaveRoom={leaveRoom}
-    />
+        gameRoom={gameRoom}
+        playerId={playerId}
+        playerName={playerName}
+        onSubmitClue={submitClue}
+        onVote={vote}
+        onResetGame={resetGame}
+        onSkipPhase={skipPhase}
+        onNextRound={nextRound}
+        onLeaveRoom={() => leaveRoom(gameRoom.id)}
+      />
     </>
   );
 }
