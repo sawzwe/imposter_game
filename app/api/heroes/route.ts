@@ -1,9 +1,9 @@
-import { getSupabaseClient } from "../../lib/supabaseClient";
+import { getSupabaseServer } from "../../lib/supabaseServer";
 
 export async function GET() {
   try {
     // Try to get heroes from Supabase first (cached)
-    const supabase = await getSupabaseClient();
+    const supabase = await getSupabaseServer();
 
     if (supabase) {
       const { data, error } = await supabase

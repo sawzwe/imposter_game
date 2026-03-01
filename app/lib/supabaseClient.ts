@@ -1,33 +1,16 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-let supabaseClient: SupabaseClient | null = null;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export async function getSupabaseClient(): Promise<SupabaseClient | null> {
-  if (supabaseClient) {
-    return supabaseClient;
+// Singleton for client components (browser only, uses NEXT_PUBLIC_SUPABASE_ANON_KEY)
+let browserClient: ReturnType<typeof createBrowserClient> | null = null;
+
+export function supabaseClient() {
+  if (typeof window === "undefined") return null;
+  if (!browserClient) {
+    if (!supabaseUrl || !supabaseAnonKey) return null;
+    browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
   }
-
-  try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!url || !key) {
-      return null;
-    }
-
-    const { createClient: createSupabaseClient } = await import(
-      "@supabase/supabase-js"
-    );
-    supabaseClient = createSupabaseClient(url, key, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
-    return supabaseClient;
-  } catch (error) {
-    console.error("Error creating Supabase client:", error);
-    return null;
-  }
+  return browserClient;
 }

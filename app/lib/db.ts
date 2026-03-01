@@ -4,16 +4,16 @@ import { GameRoom } from "../types";
 export interface Database {
   createRoom(
     roomId: string,
-    initialPlayer: { id: string; name: string }
+    initialPlayer: { id: string; name: string },
   ): Promise<GameRoom>;
   getRoom(roomId: string): Promise<GameRoom | null>;
   updateRoom(
     roomId: string,
-    updates: Partial<GameRoom>
+    updates: Partial<GameRoom>,
   ): Promise<GameRoom | null>;
   addPlayerToRoom(
     roomId: string,
-    player: { id: string; name: string }
+    player: { id: string; name: string },
   ): Promise<GameRoom | null>;
   deleteRoom(roomId: string): Promise<boolean>;
   cleanupInactiveRooms(maxAgeMs: number): Promise<number>; // Returns number of rooms deleted
@@ -25,7 +25,7 @@ class InMemoryDatabase implements Database {
 
   async createRoom(
     roomId: string,
-    initialPlayer: { id: string; name: string }
+    initialPlayer: { id: string; name: string },
   ): Promise<GameRoom> {
     const room: GameRoom = {
       id: roomId,
@@ -53,7 +53,7 @@ class InMemoryDatabase implements Database {
 
   async updateRoom(
     roomId: string,
-    updates: Partial<GameRoom>
+    updates: Partial<GameRoom>,
   ): Promise<GameRoom | null> {
     const room = this.gameRooms.get(roomId);
     if (!room) return null;
@@ -69,7 +69,7 @@ class InMemoryDatabase implements Database {
 
   async addPlayerToRoom(
     roomId: string,
-    player: { id: string; name: string }
+    player: { id: string; name: string },
   ): Promise<GameRoom | null> {
     const room = this.gameRooms.get(roomId);
     if (!room) return null;
@@ -149,14 +149,14 @@ class SupabaseDatabase implements Database {
       throw new Error(
         error instanceof Error
           ? error.message
-          : "Failed to create Supabase client"
+          : "Failed to create Supabase client",
       );
     }
   }
 
   async createRoom(
     roomId: string,
-    initialPlayer: { id: string; name: string }
+    initialPlayer: { id: string; name: string },
   ): Promise<GameRoom> {
     const room: GameRoom = {
       id: roomId,
@@ -220,7 +220,7 @@ class SupabaseDatabase implements Database {
 
   async updateRoom(
     roomId: string,
-    updates: Partial<GameRoom>
+    updates: Partial<GameRoom>,
   ): Promise<GameRoom | null> {
     const room = await this.getRoom(roomId);
     if (!room) return null;
@@ -246,7 +246,7 @@ class SupabaseDatabase implements Database {
 
   async addPlayerToRoom(
     roomId: string,
-    player: { id: string; name: string }
+    player: { id: string; name: string },
   ): Promise<GameRoom | null> {
     const room = await this.getRoom(roomId);
     if (!room) return null;

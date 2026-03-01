@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import AuthModal from "./components/AuthModal";
 import GameLobby from "./components/GameLobby";
 import GameScreen from "./components/GameScreen";
 import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
@@ -15,6 +17,8 @@ export default function HomeClient() {
   const searchParams = useSearchParams();
   const roomIdFromUrl = searchParams.get("room");
   const { showToast } = useToast();
+  const { user, signOut } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
   const [showGameSelect, setShowGameSelect] = useState(true);
@@ -145,19 +149,21 @@ export default function HomeClient() {
     }
   };
 
+  // Derive playerId: use auth user id when logged in, else localStorage or new UUID
   useEffect(() => {
-    // Generate a unique player ID on mount
-    const storedPlayerId = localStorage.getItem("playerId");
-    if (storedPlayerId) {
-      setPlayerId(storedPlayerId);
-    } else {
-      const newPlayerId = `player_${Date.now()}_${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
-      setPlayerId(newPlayerId);
-      localStorage.setItem("playerId", newPlayerId);
+    const id =
+      user?.id ??
+      (typeof window !== "undefined" ? localStorage.getItem("playerId") : null) ??
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `player_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
+    setPlayerId(id);
+    if (typeof window !== "undefined" && !user) {
+      localStorage.setItem("playerId", id);
     }
+  }, [user?.id]);
 
+  useEffect(() => {
     // Restore player name
     const storedName = localStorage.getItem("playerName");
     if (storedName) {
@@ -689,10 +695,46 @@ export default function HomeClient() {
     else createRoom();
   };
 
+  const accountCorner = (
+    <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-lg">
+      {user ? (
+        <>
+          <span
+            className="max-w-[160px] truncate text-sm text-[var(--text)]"
+            title={user.email ?? undefined}
+          >
+            {user.email}
+          </span>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="rounded-lg bg-[var(--surface2)] px-2 py-1 text-xs font-medium text-[var(--text)] hover:bg-[var(--border)]"
+          >
+            Sign out
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAuthModalOpen(true)}
+          className="rounded-lg bg-[var(--blue)] px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+        >
+          Login
+        </button>
+      )}
+    </div>
+  );
+
   // Game mode selector - when no room and no invite link
   if (showGameSelect && !gameRoom && !roomIdFromUrl) {
     return (
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
+      <>
+        {accountCorner}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
         <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
           Imposter Game
         </h1>
@@ -730,12 +772,19 @@ export default function HomeClient() {
           </Link>
         </div>
       </div>
+      </>
     );
   }
 
   if (!gameRoom) {
     return (
-      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+      <>
+        {accountCorner}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+        <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
           {!roomIdFromUrl && (
             <button
@@ -862,6 +911,7 @@ export default function HomeClient() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
@@ -870,7 +920,13 @@ export default function HomeClient() {
     gameRoom.gameState === "headsup_playing"
   ) {
     return (
-      <HeadsUpMultiScreen
+      <>
+        {accountCorner}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+        <HeadsUpMultiScreen
         gameRoom={gameRoom}
         playerId={playerId}
         onLeaveRoom={() => {
@@ -878,6 +934,7 @@ export default function HomeClient() {
           leaveRoom();
         }}
       />
+      </>
     );
   }
 
@@ -886,7 +943,13 @@ export default function HomeClient() {
     gameRoom.gameState === "playing"
   ) {
     return (
-      <HeadsUpOnline
+      <>
+        {accountCorner}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+        <HeadsUpOnline
         gameRoom={gameRoom}
         localPlayerId={playerId}
         onRotateCard={rotateCard}
@@ -895,12 +958,19 @@ export default function HomeClient() {
           leaveRoom();
         }}
       />
+      </>
     );
   }
 
   if (gameRoom.gameState === "lobby") {
     return (
-      <GameLobby
+      <>
+        {accountCorner}
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+        />
+        <GameLobby
         gameRoom={gameRoom}
         playerId={playerId}
         playerName={playerName}
@@ -917,11 +987,18 @@ export default function HomeClient() {
         onToggleHints={toggleHints}
         onKickPlayer={kickPlayer}
       />
+      </>
     );
   }
 
   return (
-    <GameScreen
+    <>
+      {accountCorner}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+      />
+      <GameScreen
       gameRoom={gameRoom}
       playerId={playerId}
       playerName={playerName}
@@ -932,5 +1009,6 @@ export default function HomeClient() {
       onNextRound={nextRound}
       onLeaveRoom={leaveRoom}
     />
+    </>
   );
 }

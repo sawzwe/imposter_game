@@ -10,6 +10,8 @@
     "sync-cards": "tsx scripts/sync-cards.ts"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.84.0",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
