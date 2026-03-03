@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS game_rooms (
 -- Create an index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_game_rooms_updated_at ON game_rooms(updated_at);
 
+-- Enable Realtime for instant game state updates (no polling)
+ALTER PUBLICATION supabase_realtime ADD TABLE game_rooms;
+
 -- Optional: Add a cleanup function to delete old rooms (older than 24 hours)
 CREATE OR REPLACE FUNCTION cleanup_old_rooms()
 RETURNS void AS $$

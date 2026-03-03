@@ -78,4 +78,5 @@ export interface GameRoom {
   votingStartTime?: number; // Timestamp when voting phase started
   headsupCountdownEnd?: number; // Timestamp when countdown finishes
   lastUpdated?: number; // Timestamp of last update for efficient polling
+  currentTurnPlayerId?: string; // For headsup_online: whose turn to speak
 }

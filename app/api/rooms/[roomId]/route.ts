@@ -406,6 +406,7 @@ export async function PATCH(
           round: 1,
           clues: [],
           votes: [],
+          currentTurnPlayerId: room.players[0]?.id,
         });
 
         return NextResponse.json({ room: updatedRoom });
@@ -454,6 +455,7 @@ export async function PATCH(
           round: 1,
           clues: [],
           votes: [],
+          currentTurnPlayerId: room.players[0]?.id,
         });
 
         return NextResponse.json({ room: updatedRoom });
@@ -499,10 +501,40 @@ export async function PATCH(
           round: 1,
           clues: [],
           votes: [],
+          currentTurnPlayerId: room.players[0]?.id,
         });
 
         return NextResponse.json({ room: updatedRoom });
       }
+    }
+
+    // Next turn — host advances whose turn to speak (headsup_online)
+    if (action === "nextTurn") {
+      if (room.gameFormat !== "headsup_online" || room.gameState !== "playing") {
+        return NextResponse.json(
+          { error: "Next turn only valid during headsup_online play" },
+          { status: 400 }
+        );
+      }
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
+        return NextResponse.json(
+          { error: "Only the host can advance the turn" },
+          { status: 403 }
+        );
+      }
+      const currentIndex = room.players.findIndex(
+        (p) => p.id === room.currentTurnPlayerId
+      );
+      const nextIndex =
+        currentIndex < 0 || currentIndex >= room.players.length - 1
+          ? 0
+          : currentIndex + 1;
+      const nextPlayerId = room.players[nextIndex]?.id;
+      const updatedRoom = await updateRoom(roomId, {
+        currentTurnPlayerId: nextPlayerId,
+      });
+      return NextResponse.json({ room: updatedRoom });
     }
 
     // Rotate card for a player (assign new card, increment score) — for headsup_online
@@ -529,14 +561,22 @@ export async function PATCH(
         );
       }
 
-      // Cannot mark your own card correct (you don't know it)
-      if (targetPlayerId === playerId) {
+      // Only host can mark correct (prevents misclicks from other players)
+      const isHost = room.players[0]?.id === playerId;
+      if (!isHost) {
         return NextResponse.json(
-          { error: "Cannot mark your own card" },
-          { status: 400 }
+          { error: "Only the host can mark correct. Ask the host to advance." },
+          { status: 403 }
         );
       }
 
+      // Host cannot mark their own card (they don't know it; use next turn instead)
+      if (targetPlayerId === playerId) {
+        return NextResponse.json(
+          { error: "Use Next turn to advance. You can't mark your own card." },
+          { status: 400 }
+        );
+      }
       const selectedGameType: GameType = room.gameType || "dota2";
       // Exclude all other players' cards (target's current card is being replaced)
       const usedIds = new Set<string>();
@@ -790,7 +830,107 @@ export async function PATCH(
         );
       }
 
-      // Reset for next round but keep players and game type
+      // Heads Up Online: assign new cards to everyone (fresh round)
+      if (room.gameFormat === "headsup_online" && room.gameState === "playing") {
+        const selectedGameType: GameType = room.gameType || "dota2";
+        const numPlayers = room.players.length;
+
+        if (selectedGameType === "dota2") {
+          const heroesResponse = await fetch(
+            `${request.nextUrl.origin}/api/heroes`
+          );
+          if (!heroesResponse.ok)
+            throw new Error("Failed to fetch Dota 2 heroes");
+          const heroesData = await heroesResponse.json();
+          const heroes: Hero[] = heroesData.result?.data?.heroes || [];
+          if (heroes.length < numPlayers)
+            throw new Error("Not enough heroes for all players");
+          const shuffled = [...heroes].sort(() => Math.random() - 0.5);
+          const assigned = shuffled.slice(0, numPlayers);
+          const getHeroImageUrl = (h: Hero) => {
+            const shortName = h.name.replace("npc_dota_hero_", "");
+            return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`;
+          };
+          const updatedPlayers = room.players.map((player, index) => {
+            const hero = assigned[index];
+            return {
+              ...player,
+              assignedCardId: String(hero.id),
+              assignedCardName: hero.name_english_loc || hero.name,
+              assignedCardImage: getHeroImageUrl(hero),
+              score: 0,
+            };
+          });
+          const updatedRoom = await updateRoom(roomId, {
+            players: updatedPlayers,
+            round: room.round + 1,
+            currentTurnPlayerId: room.players[0]?.id,
+          });
+          return NextResponse.json({ room: updatedRoom });
+        }
+
+        if (selectedGameType === "clashroyale") {
+          const cardsResponse = await fetch(
+            `${request.nextUrl.origin}/api/clash-royale/cards`
+          );
+          if (!cardsResponse.ok)
+            throw new Error("Failed to fetch Clash Royale cards");
+          const cardsData = await cardsResponse.json();
+          const cards: ClashRoyaleCard[] = cardsData.items || [];
+          if (cards.length < numPlayers)
+            throw new Error("Not enough cards for all players");
+          const shuffled = [...cards].sort(() => Math.random() - 0.5);
+          const assigned = shuffled.slice(0, numPlayers);
+          const updatedPlayers = room.players.map((player, index) => {
+            const card = assigned[index];
+            return {
+              ...player,
+              assignedCardId: String(card.id),
+              assignedCardName: card.name,
+              assignedCardImage: card.iconUrls?.medium,
+              score: 0,
+            };
+          });
+          const updatedRoom = await updateRoom(roomId, {
+            players: updatedPlayers,
+            round: room.round + 1,
+            currentTurnPlayerId: room.players[0]?.id,
+          });
+          return NextResponse.json({ room: updatedRoom });
+        }
+
+        if (selectedGameType === "mobilelegends") {
+          const mlResponse = await fetch(
+            `${request.nextUrl.origin}/api/mobile-legends/heroes`
+          );
+          if (!mlResponse.ok)
+            throw new Error("Failed to fetch Mobile Legends heroes");
+          const mlData = await mlResponse.json();
+          const mlHeroes: MobileLegendsHero[] = mlData.items || [];
+          if (mlHeroes.length < numPlayers)
+            throw new Error("Not enough heroes for all players");
+          const shuffled = [...mlHeroes].sort(() => Math.random() - 0.5);
+          const assigned = shuffled.slice(0, numPlayers);
+          const updatedPlayers = room.players.map((player, index) => {
+            const hero = assigned[index];
+            return {
+              ...player,
+              assignedCardId: hero.uid,
+              assignedCardName: hero.name,
+              assignedCardImage: hero.portrait,
+              score: 0,
+            };
+          });
+          const updatedRoom = await updateRoom(roomId, {
+            players: updatedPlayers,
+            round: room.round + 1,
+            currentTurnPlayerId: room.players[0]?.id,
+          });
+          return NextResponse.json({ room: updatedRoom });
+        }
+      }
+
+      // Imposter game: reset for next round but keep players and game type
       const updatedRoom = await updateRoom(roomId, {
         gameState: "playing",
         round: room.round + 1,

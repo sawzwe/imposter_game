@@ -9,6 +9,7 @@ import GameLobby from "../components/GameLobby";
 import GameScreen from "../components/GameScreen";
 import HeadsUpMultiScreen from "../components/HeadsUpMultiScreen";
 import HeadsUpOnline from "../components/HeadsUpOnline";
+import { useRoomRealtime } from "@/hooks/useRoomRealtime";
 import { useToast } from "../components/ToastContext";
 import { APP } from "../lib/constants";
 import { GameRoom, GameType } from "../types";
@@ -129,6 +130,22 @@ export default function PlayClient() {
     if (storedName) setPlayerName(storedName);
   }, []);
 
+  // Supabase Realtime — instant updates when room changes (no polling)
+  const hasRealtimeRef = useRef(false);
+  hasRealtimeRef.current = useRoomRealtime(
+    gameRoom?.id ?? null,
+    (room) => {
+      const currentPlayerId = localStorage.getItem("playerId");
+      const playerStillInRoom = room.players.some((p) => p.id === currentPlayerId);
+      if (playerStillInRoom) {
+        setGameRoom(room);
+      } else {
+        router.push(`/?room=${(room.id ?? "").replace("room_", "")}`);
+      }
+    },
+    () => router.push("/"),
+  );
+
   // Fetch room when room in URL
   useEffect(() => {
     if (!roomCodeFromUrl) {
@@ -176,9 +193,9 @@ export default function PlayClient() {
     load();
   }, [roomCodeFromUrl, router]);
 
-  // Poll for updates
+  // Poll for updates (fallback when Realtime not available, e.g. in-memory db)
   useEffect(() => {
-    if (!gameRoom) return;
+    if (!gameRoom || hasRealtimeRef.current) return;
 
     if (gameRoom.lastUpdated) {
       lastRoomUpdateRef.current = gameRoom.lastUpdated;
@@ -319,6 +336,10 @@ export default function PlayClient() {
 
   const rotateCard = async (targetPlayerId: string) => {
     await apiCall("rotateCard", { playerId, targetPlayerId });
+  };
+
+  const nextTurn = async () => {
+    await apiCall("nextTurn", { playerId });
   };
 
   const submitClue = async (clue: string) => {
@@ -482,6 +503,8 @@ export default function PlayClient() {
           localPlayerId={playerId}
           isHost={gameRoom.players[0]?.id === playerId}
           onRotateCard={rotateCard}
+          onNextTurn={nextTurn}
+          onNextRound={nextRound}
           onLeaveRoom={() => {
             showToast("Left the room");
             leaveRoom(gameRoom.id);
