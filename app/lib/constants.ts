@@ -10,7 +10,7 @@ export const APP = {
   gameName: "impo",
   /** Meta description for SEO */
   description:
-    "Multiplayer party games — impo, Heads Up, and more. Play with Dota 2 heroes and Clash Royale cards.",
+    "Multiplayer party games — impo, Heads Up, Guess Who. Play with Dota 2 heroes and Clash Royale cards.",
 } as const;
 
 export const LINKS = {

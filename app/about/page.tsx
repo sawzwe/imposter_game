@@ -10,7 +10,7 @@ export default function AboutPage() {
         </h1>
         <p className="mb-6 text-center text-sm text-[var(--muted)]">
           A multiplayer party game with Dota 2 heroes and Clash Royale cards.
-          Play {APP.gameName}, Heads Up, or Online Heads Up with friends.
+          Play {APP.gameName}, Heads Up, or Guess Who with friends.
         </p>
         <div className="space-y-3 text-sm text-[var(--text)]">
           <p>

@@ -33,24 +33,26 @@ export default function HeadsUpOnline({
     <div className="relative z-10 flex min-h-screen flex-col p-4 sm:p-6">
       <div className="mx-auto w-full max-w-2xl">
         <h1 className="gradient-text mb-1 text-center font-display text-2xl font-bold tracking-wide md:text-3xl">
-          Online Heads Up
+          Guess Who
         </h1>
         <p className="mb-4 text-center text-sm text-[var(--muted)]">
           You see everyone&apos;s card except your own. Ask yes/no questions!
         </p>
 
-        {/* Turn indicator + host controls */}
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface2)] p-3">
-          <span className="text-sm text-[var(--muted)]">Speaking:</span>
-          <span className="font-display font-bold text-[var(--blue)]">
+        {/* Speaking — prominent, with Next turn */}
+        <div className="mb-4 rounded-xl border-2 border-[var(--blue)] bg-[var(--blue)]/10 p-4 shadow-[0_0_24px_var(--blue-glow)]">
+          <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+            Speaking
+          </p>
+          <p className="mb-3 text-center font-display text-xl font-bold text-[var(--blue)]">
             {turnName}
-          </span>
+          </p>
           {isHost && onNextTurn && (
             <button
               onClick={onNextTurn}
-              className="rounded-lg border-2 border-[var(--blue)] bg-[var(--blue)]/20 px-3 py-1.5 font-display text-sm font-bold text-[var(--blue)] transition-all hover:bg-[var(--blue)]/30"
+              className="mx-auto flex w-full max-w-[200px] items-center justify-center rounded-xl bg-[var(--blue)] px-4 py-3 font-display font-bold text-white transition-all hover:brightness-110 active:scale-[0.98]"
             >
-              Next turn
+              Next turn →
             </button>
           )}
         </div>
@@ -86,19 +88,23 @@ export default function HeadsUpOnline({
         <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">
           {gameRoom.players
             .filter((p) => p.id !== localPlayerId)
-            .map((player: Player) => (
+            .map((player: Player) => {
+              const isSpeaking = gameRoom.currentTurnPlayerId === player.id;
+              return (
               <div
                 key={player.id}
-                className={`flex min-w-[140px] shrink-0 flex-col rounded-xl border-2 bg-[var(--surface2)] p-3 transition-all sm:min-w-0 ${
-                  gameRoom.currentTurnPlayerId === player.id
-                    ? "border-[var(--blue)] shadow-[0_0_20px_var(--blue-glow)]"
-                    : "border-[var(--border)]"
+                className={`flex min-w-[140px] shrink-0 flex-col rounded-xl border-2 p-3 transition-all sm:min-w-0 ${
+                  isSpeaking
+                    ? "border-[var(--blue)] bg-[var(--blue)]/10 shadow-[0_0_20px_var(--blue-glow)] ring-2 ring-[var(--blue)]/50"
+                    : "border-[var(--border)] bg-[var(--surface2)]"
                 }`}
               >
                 <p className="mb-2 truncate font-display text-sm font-bold text-[var(--text)]">
                   {player.name}
-                  {gameRoom.currentTurnPlayerId === player.id && (
-                    <span className="ml-1 text-[var(--blue)]">• speaking</span>
+                  {isSpeaking && (
+                    <span className="ml-1 rounded bg-[var(--blue)]/30 px-1.5 py-0.5 text-xs font-bold text-[var(--blue)]">
+                      speaking
+                    </span>
                   )}
                 </p>
                 <div className="flex flex-1 flex-col items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2">
@@ -132,7 +138,8 @@ export default function HeadsUpOnline({
                   </p>
                 )}
               </div>
-            ))}
+            );
+            })}
         </div>
 
         <div className="mt-8 space-y-3">
@@ -144,17 +151,21 @@ export default function HeadsUpOnline({
               Next round (new cards)
             </button>
           )}
+        </div>
+
+        {/* Room options — separate section, less prominent */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4 border-t border-[var(--border)] pt-6">
           {isHost && onBackToLobby && (
             <button
               onClick={onBackToLobby}
-              className="w-full rounded-xl border border-[var(--blue)] bg-transparent py-3 font-semibold text-[var(--blue)] transition-colors hover:bg-[var(--blue)]/10"
+              className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--blue)]"
             >
-              ← Back to Lobby (change mode)
+              ← Back to Lobby
             </button>
           )}
           <button
             onClick={onLeaveRoom}
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent py-3 font-semibold text-[var(--muted)] transition-colors hover:border-[var(--red)] hover:bg-[var(--red)]/10 hover:text-[var(--red)]"
+            className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--red)]"
           >
             Leave Room
           </button>

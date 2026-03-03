@@ -312,7 +312,7 @@ export default function PlayClient() {
     try {
       await apiCall("startHeadsUpOnline", { gameType });
     } catch (e: any) {
-      setError(e.message || "Failed to start Online Heads Up");
+      setError(e.message || "Failed to start Guess Who");
     } finally {
       setIsLoading(false);
     }

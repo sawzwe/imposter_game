@@ -270,9 +270,9 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)]"
                   }`}
                 >
-                  <div className="mb-1 text-2xl">🌐</div>
+                  <div className="mb-1 text-2xl">🔍</div>
                   <div className="font-display font-bold text-[var(--text)]">
-                    Online
+                    Guess Who
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Each device · See others&apos; cards
@@ -390,7 +390,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Online · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start Guess Who · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             ) : (
