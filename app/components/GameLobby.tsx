@@ -44,7 +44,7 @@ export default function GameLobby({
 
   const isHost = gameRoom.players[0]?.id === playerId;
 
-  // Extract room code from roomId (format: room_XXXXXX)
+  // Extract room code from roomId (format: room_XXXX)
   const getRoomCode = (roomId: string): string => {
     if (roomId.startsWith("room_")) {
       return roomId.replace("room_", "");

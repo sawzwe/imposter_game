@@ -44,8 +44,8 @@ export function validateRoomCode(code: string): boolean {
     return false;
   }
 
-  // Room code should be 6 alphanumeric characters (uppercase)
-  const roomCodeRegex = /^[A-Z0-9]{6}$/;
+  // Room code should be 4 alphanumeric characters (uppercase)
+  const roomCodeRegex = /^[A-Z0-9]{4}$/;
   return roomCodeRegex.test(code.toUpperCase());
 }
 

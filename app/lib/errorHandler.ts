@@ -86,6 +86,14 @@ export function getUserFriendlyError(error: unknown): string {
       return "Server error. Please try again in a moment.";
     }
 
+    // Room not found
+    if (
+      error.message.toLowerCase().includes("room not found") ||
+      error.message.toLowerCase().includes("room doesn't exist")
+    ) {
+      return "Room not found. Check the code and try again.";
+    }
+
     // Return the error message if it's user-friendly
     if (error.message.length < 100) {
       return error.message;

@@ -61,7 +61,12 @@ export default function HomeClient() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to join room");
+        setError(
+          data.error === "Room not found"
+            ? "Room not found. Check the code and try again."
+            : data.error || "Failed to join room",
+        );
+        return;
       }
 
       localStorage.setItem("playerName", nameToUse);
@@ -160,7 +165,7 @@ export default function HomeClient() {
   };
   const handleSubmit = () => {
     if (roomIdFromUrl) joinRoom(roomIdFromUrl);
-    else if (roomCode.trim().length === 6) joinRoom(roomCode.trim());
+    else if (roomCode.trim().length === 4) joinRoom(roomCode.trim());
     else createRoom();
   };
 
@@ -248,12 +253,12 @@ export default function HomeClient() {
                             e.target.value
                               .toUpperCase()
                               .replace(/[^A-Z0-9]/g, "")
-                              .slice(0, 6),
+                              .slice(0, 4),
                           )
                         }
-                        placeholder="Enter 6-digit code"
-                        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-xl font-bold tracking-[0.4em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)] sm:text-2xl"
-                        maxLength={6}
+                        placeholder="Enter 4-digit code"
+                        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-xl font-bold tracking-[0.4em] text-[var(--text)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)] sm:text-2xl"
+                        maxLength={4}
                         disabled={isLoading}
                       />
                       <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
@@ -277,32 +282,34 @@ export default function HomeClient() {
                         "Join Room"
                       )}
                     </button>
-                  ) : roomCode.trim().length === 6 ? (
-                    <button
-                      onClick={() => joinRoom(roomCode.trim())}
-                      disabled={isLoading || !playerName.trim()}
-                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {isLoading ? (
-                        <>
-                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          Joining...
-                        </>
-                      ) : (
-                        "Join Room"
-                      )}
-                    </button>
                   ) : (
                     <button
-                      onClick={createRoom}
-                      disabled={isLoading || !playerName.trim()}
-                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                      onClick={() =>
+                        roomCode.trim().length === 4
+                          ? joinRoom(roomCode.trim())
+                          : createRoom()
+                      }
+                      disabled={
+                        isLoading ||
+                        !playerName.trim() ||
+                        (roomCode.trim().length > 0 &&
+                          roomCode.trim().length < 4)
+                      }
+                      className={`flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
+                        roomCode.trim().length > 0
+                          ? "bg-[var(--green)] hover:brightness-110"
+                          : "bg-[var(--blue)] hover:brightness-110"
+                      }`}
                     >
                       {isLoading ? (
                         <>
                           <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          Creating...
+                          {roomCode.trim().length === 4
+                            ? "Joining..."
+                            : "Creating..."}
                         </>
+                      ) : roomCode.trim().length > 0 ? (
+                        "Join Room"
                       ) : (
                         "Create Room"
                       )}
