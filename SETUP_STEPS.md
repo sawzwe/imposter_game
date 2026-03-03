@@ -4,6 +4,13 @@
 
 You've already run the SQL script in Supabase. The `game_rooms` table is created.
 
+**For Realtime (instant updates):** Run the full `supabase-setup.sql` in Supabase SQL Editor. It includes:
+- RLS policy for anon SELECT (required for Realtime)
+- `REPLICA IDENTITY FULL` (for full payload)
+- Publication for `game_rooms`
+
+If you already ran it before, run only the new parts (RLS + policy + replica identity) — or re-run the full script (some commands may error if already applied, that's fine).
+
 ## 📋 Step 2: Get Your Supabase Credentials
 
 1. Go to your Supabase project dashboard
@@ -19,8 +26,10 @@ You've already run the SQL script in Supabase. The `game_rooms` table is created
    ```
    USE_SUPABASE=true
    NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...   # For Realtime (browser)
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...       # For API (server, keep secret)
    ```
+   - **Anon key** = "anon public" in Supabase Dashboard → Settings → API. Required for Realtime.
 
 ## 🧪 Step 4: Test Locally
 

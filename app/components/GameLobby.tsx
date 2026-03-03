@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
 import { DotaLogo, ClashRoyaleEmote, MobileLegendsLogo } from "./assets";
 import { useToast } from "./ToastContext";
+import { APP } from "../lib/constants";
 import { GameRoom, GameType, GameFormat } from "../types";
 
 interface GameLobbyProps {
@@ -44,7 +45,7 @@ export default function GameLobby({
 
   const isHost = gameRoom.players[0]?.id === playerId;
 
-  // Extract room code from roomId (format: room_XXXXXX)
+  // Extract room code from roomId (format: room_XXXX)
   const getRoomCode = (roomId: string): string => {
     if (roomId.startsWith("room_")) {
       return roomId.replace("room_", "");
@@ -239,7 +240,7 @@ export default function GameLobby({
                 >
                   <div className="mb-1 text-2xl">🎭</div>
                   <div className="font-display font-bold text-[var(--text)]">
-                    Imposter
+                    {APP.gameName}
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Find the imposter
@@ -269,9 +270,9 @@ export default function GameLobby({
                       : "border-[var(--border)] bg-[var(--surface2)]"
                   }`}
                 >
-                  <div className="mb-1 text-2xl">🌐</div>
+                  <div className="mb-1 text-2xl">🔍</div>
                   <div className="font-display font-bold text-[var(--text)]">
-                    Online
+                    Guess Who
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Each device · See others&apos; cards
@@ -285,7 +286,7 @@ export default function GameLobby({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-semibold text-[var(--text)]">
-                      Imposter Hints
+                      {APP.gameName} Hints
                     </h3>
                     <p className="text-sm text-[var(--muted)]">
                       {gameRoom.hintsEnabled !== false
@@ -389,7 +390,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Online · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start Guess Who · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             ) : (
@@ -404,7 +405,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Imposter · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start {APP.gameName} · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             )}

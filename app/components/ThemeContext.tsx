@@ -9,10 +9,11 @@ import {
   useRef,
 } from "react";
 import { motion } from "framer-motion";
+import { STORAGE_KEYS } from "../lib/constants";
 
 export type DesignTheme = "default" | "cyberpunk" | "solarpunk";
 
-const THEME_KEY = "imposter-theme";
+const THEME_KEY = STORAGE_KEYS.theme;
 const VALID_THEMES: DesignTheme[] = ["default", "cyberpunk", "solarpunk"];
 const TRANSITION_MS = 400; // total: fade out 200ms, apply theme, fade in 200ms
 

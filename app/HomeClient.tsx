@@ -1,125 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "./components/AuthModal";
-import GameLobby from "./components/GameLobby";
-import GameScreen from "./components/GameScreen";
-import HeadsUpMultiScreen from "./components/HeadsUpMultiScreen";
-import HeadsUpOnline from "./components/HeadsUpOnline";
-import { useToast } from "./components/ToastContext";
-import { GameRoom, GameType } from "./types";
+import { APP } from "./lib/constants";
 import { getUserFriendlyError } from "./lib/errorHandler";
 
 export default function HomeClient() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const roomIdFromUrl = searchParams.get("room");
-  const { showToast } = useToast();
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
-  const [showGameSelect, setShowGameSelect] = useState(true);
-  const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lastRoomUpdateRef = useRef<number>(0);
 
-  // Extract room code from roomId (format: room_XXXXXX)
   const getRoomCodeFromId = (roomId: string): string => {
     if (roomId.startsWith("room_")) {
       return roomId.replace("room_", "");
     }
     return roomId;
   };
-
-  const clearLocalRoomState = useCallback(() => {
-    localStorage.removeItem("roomId");
-    setGameRoom(null);
-    setRoomCode("");
-    setError(null);
-    if (
-      typeof window !== "undefined" &&
-      window.location.search.includes("room=")
-    ) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []);
-
-  const leaveRoom = useCallback(
-    async (roomId?: string) => {
-      const targetRoomId = roomId || localStorage.getItem("roomId");
-      const currentPlayerId = localStorage.getItem("playerId");
-
-      if (targetRoomId && currentPlayerId) {
-        try {
-          await fetch(`/api/rooms/${targetRoomId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "leaveRoom",
-              playerId: currentPlayerId,
-            }),
-          });
-        } catch {
-          // Ignore errors — still clear local state
-        }
-      }
-
-      clearLocalRoomState();
-    },
-    [clearLocalRoomState],
-  );
-
-  // Helper function to fetch room state
-  const fetchRoomState = useCallback(
-    async (roomId: string) => {
-      try {
-        const response = await fetch(`/api/rooms?roomId=${roomId}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.room) {
-            // Check if current player is still in the room (might have been kicked)
-            const currentPlayerId = localStorage.getItem("playerId");
-            const playerStillInRoom = data.room.players.some(
-              (p: any) => p.id === currentPlayerId,
-            );
-
-            if (!playerStillInRoom) {
-              // Player was kicked — server already removed them, just clear local state
-              clearLocalRoomState();
-              return null;
-            }
-
-            // Only update if room has actually changed
-            if (
-              data.room.lastUpdated &&
-              data.room.lastUpdated > lastRoomUpdateRef.current
-            ) {
-              lastRoomUpdateRef.current = data.room.lastUpdated;
-              return data.room;
-            } else if (!data.room.lastUpdated) {
-              // Fallback if lastUpdated not set
-              return data.room;
-            }
-            return null;
-          }
-        } else if (response.status === 404) {
-          // Room not found, clear state (no server call needed)
-          clearLocalRoomState();
-        }
-      } catch (error) {
-        console.error("Error fetching room:", error);
-      }
-      return null;
-    },
-    [leaveRoom],
-  );
 
   const joinRoom = async (roomIdOrCode: string, name?: string) => {
     const nameToUse = name || playerName.trim();
@@ -155,16 +62,19 @@ export default function HomeClient() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to join room");
+        setError(
+          data.error === "Room not found"
+            ? "Room not found. Check the code and try again."
+            : data.error || "Failed to join room",
+        );
+        return;
       }
 
       localStorage.setItem("playerName", nameToUse);
+      localStorage.setItem("playerId", playerId);
       localStorage.setItem("roomId", data.room.id);
-      if (data.room.lastUpdated) {
-        lastRoomUpdateRef.current = data.room.lastUpdated;
-      }
-      setGameRoom(data.room);
       setError(null);
+      router.push(`/play?room=${getRoomCodeFromId(data.room.id)}`);
     } catch (error: any) {
       console.error("Error joining room:", error);
       setError(getUserFriendlyError(error));
@@ -190,7 +100,7 @@ export default function HomeClient() {
         : `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
     const id = toValidPlayerId(raw);
     setPlayerId(id);
-    if (typeof window !== "undefined" && !user) {
+    if (typeof window !== "undefined") {
       localStorage.setItem("playerId", id);
     }
   }, [user?.id]);
@@ -202,107 +112,16 @@ export default function HomeClient() {
       setPlayerName(storedName);
     }
 
-    // Try to restore session - check if user was in a room
+    // If user has a room in session and no invite link, redirect to /play
     const storedRoomId = localStorage.getItem("roomId");
-    if (storedRoomId && storedName) {
-      // Try to rejoin the room
-      const checkAndRejoin = async () => {
-        const currentPlayerId = localStorage.getItem("playerId");
-        if (currentPlayerId) {
-          try {
-            const response = await fetch(`/api/rooms?roomId=${storedRoomId}`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.room) {
-                // Check if player is still in the room
-                const playerInRoom = data.room.players.some(
-                  (p: any) => p.id === currentPlayerId,
-                );
-                if (playerInRoom) {
-                  setGameRoom(data.room);
-                } else {
-                  // Player not in room (might have been kicked), clear state and go home
-                  localStorage.removeItem("roomId");
-                  // Don't try to rejoin automatically if kicked
-                }
-              }
-            } else if (response.status === 404) {
-              // Room doesn't exist, clear state
-              localStorage.removeItem("roomId");
-            }
-          } catch (error) {
-            console.error("Error restoring session:", error);
-            localStorage.removeItem("roomId");
-          }
-        } else {
-          setTimeout(checkAndRejoin, 100);
-        }
-      };
-      setTimeout(checkAndRejoin, 100);
-    } else if (roomIdFromUrl) {
-      // Check if joining a room from URL
-      if (storedName) {
-        const checkAndJoin = () => {
-          const currentPlayerId = localStorage.getItem("playerId");
-          if (currentPlayerId) {
-            setTimeout(() => {
-              joinRoom(roomIdFromUrl, storedName);
-            }, 100);
-          } else {
-            setTimeout(checkAndJoin, 100);
-          }
-        };
-        checkAndJoin();
-      }
+    if (storedRoomId && storedName && !roomIdFromUrl) {
+      const roomCode = storedRoomId.startsWith("room_")
+        ? storedRoomId.replace("room_", "")
+        : storedRoomId;
+      router.replace(`/play?room=${roomCode}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomIdFromUrl]);
+  }, [router, roomIdFromUrl]);
 
-  // Poll for game state updates - less frequently and only when needed
-  useEffect(() => {
-    if (!gameRoom) return;
-
-    // Update lastRoomUpdateRef when gameRoom changes
-    if (gameRoom.lastUpdated) {
-      lastRoomUpdateRef.current = gameRoom.lastUpdated;
-    }
-
-    // Determine polling interval based on game state
-    // More frequent during active gameplay, less frequent in lobby/finished
-    const getPollInterval = () => {
-      // Online Heads Up: 2 seconds for real-time sync
-      if (
-        gameRoom.gameFormat === "headsup_online" &&
-        gameRoom.gameState === "playing"
-      ) {
-        return 2000;
-      }
-      if (gameRoom.gameState === "playing" || gameRoom.gameState === "voting") {
-        return 5000; // 5 seconds during active gameplay
-      }
-      return 10000; // 10 seconds in lobby or finished state
-    };
-
-    const pollInterval = setInterval(async () => {
-      try {
-        // Check if we still have a roomId in localStorage (user hasn't left)
-        const storedRoomId = localStorage.getItem("roomId");
-        if (!storedRoomId || storedRoomId !== gameRoom.id) {
-          clearInterval(pollInterval);
-          return;
-        }
-
-        const updatedRoom = await fetchRoomState(gameRoom.id);
-        if (updatedRoom) {
-          setGameRoom(updatedRoom);
-        }
-      } catch (error) {
-        console.error("Error polling room:", error);
-      }
-    }, getPollInterval());
-
-    return () => clearInterval(pollInterval);
-  }, [gameRoom?.id, gameRoom?.gameState, gameRoom?.gameFormat, fetchRoomState]);
 
   const createRoom = async () => {
     if (!playerName.trim()) {
@@ -336,12 +155,10 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", playerName.trim());
-      setError(null);
+      localStorage.setItem("playerId", playerId);
       localStorage.setItem("roomId", data.room.id);
-      if (data.room.lastUpdated) {
-        lastRoomUpdateRef.current = data.room.lastUpdated;
-      }
-      setGameRoom(data.room);
+      setError(null);
+      router.push(`/play?room=${getRoomCodeFromId(data.room.id)}`);
     } catch (error: any) {
       console.error("Error creating room:", error);
       setError(error.message || "Failed to create room");
@@ -349,697 +166,203 @@ export default function HomeClient() {
       setIsLoading(false);
     }
   };
-
-  const addPlayer = async (name: string) => {
-    if (!gameRoom) return;
-
-    setIsAddingPlayer(true);
-    const newPlayerId = `player_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-
-    try {
-      const response = await fetch("/api/rooms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "join",
-          roomId: gameRoom.id,
-          playerId: newPlayerId,
-          playerName: name.trim(),
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error) {
-      console.error("Error adding player:", error);
-    } finally {
-      setIsAddingPlayer(false);
-    }
-  };
-
-  const startGame = async (gameType: GameType) => {
-    if (!gameRoom || gameRoom.players.length < 3) {
-      setError("You need at least 3 players to start the game!");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "start",
-          gameType,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to start game");
-      }
-
-      if (data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error: any) {
-      console.error("Error starting game:", error);
-      setError(error.message || "Failed to start game");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const startHeadsUpOnline = async (gameType: GameType) => {
-    if (!gameRoom || gameRoom.players.length < 2) {
-      setError("You need at least 2 players to start!");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "startHeadsUpOnline",
-          gameType,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to start Online Heads Up");
-      }
-
-      if (data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error: any) {
-      console.error("Error starting Online Heads Up:", error);
-      setError(error.message || "Failed to start Online Heads Up");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const rotateCard = async (targetPlayerId: string) => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "rotateCard",
-          playerId,
-          targetPlayerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error) {
-      console.error("Error rotating card:", error);
-    }
-  };
-
-  const startHeadsUp = async (gameType: GameType) => {
-    if (!gameRoom || gameRoom.players.length < 3) {
-      setError("You need at least 3 players to start!");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "startHeadsUp",
-          gameType,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to start Heads Up");
-      }
-
-      if (data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error: any) {
-      console.error("Error starting Heads Up:", error);
-      setError(error.message || "Failed to start Heads Up");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const submitClue = async (clue: string) => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "submitClue",
-          playerId,
-          clue: clue.trim(),
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        // Immediately update after user action
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-        // Also fetch latest state to ensure we have all updates
-        setTimeout(async () => {
-          const latestRoom = await fetchRoomState(data.room.id);
-          if (latestRoom) setGameRoom(latestRoom);
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Error submitting clue:", error);
-    }
-  };
-
-  const vote = async (targetPlayerId: string) => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "vote",
-          playerId,
-          targetPlayerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        // Immediately update after user action
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-        // Also fetch latest state to ensure we have all updates
-        setTimeout(async () => {
-          const latestRoom = await fetchRoomState(data.room.id);
-          if (latestRoom) setGameRoom(latestRoom);
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Error voting:", error);
-    }
-  };
-
-  const resetGame = async () => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "reset",
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        if (data.room.lastUpdated) {
-          lastRoomUpdateRef.current = data.room.lastUpdated;
-        }
-        setGameRoom(data.room);
-      }
-    } catch (error) {
-      console.error("Error resetting game:", error);
-    }
-  };
-
-  const skipPhase = async () => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "skip",
-          playerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        setGameRoom(data.room);
-      } else {
-        setError(data.error || "Failed to skip phase");
-      }
-    } catch (error) {
-      console.error("Error skipping phase:", error);
-      setError("Failed to skip phase");
-    }
-  };
-
-  const nextRound = async () => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "nextRound",
-          playerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        setGameRoom(data.room);
-      } else {
-        setError(data.error || "Failed to start next round");
-      }
-    } catch (error) {
-      console.error("Error starting next round:", error);
-      setError("Failed to start next round");
-    }
-  };
-
-  const toggleHints = async () => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "toggleHints",
-          playerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        setGameRoom(data.room);
-      } else {
-        setError(data.error || "Failed to toggle hints");
-      }
-    } catch (error) {
-      console.error("Error toggling hints:", error);
-      setError("Failed to toggle hints");
-    }
-  };
-
-  const kickPlayer = async (targetPlayerId: string) => {
-    if (!gameRoom) return;
-
-    try {
-      const response = await fetch(`/api/rooms/${gameRoom.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "kickPlayer",
-          playerId,
-          targetPlayerId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.room) {
-        setGameRoom(data.room);
-      } else {
-        setError(data.error || "Failed to kick player");
-      }
-    } catch (error) {
-      console.error("Error kicking player:", error);
-      setError("Failed to kick player");
-    }
-  };
-
   const handleSubmit = () => {
     if (roomIdFromUrl) joinRoom(roomIdFromUrl);
-    else if (roomCode.trim().length === 6) joinRoom(roomCode.trim());
+    else if (roomCode.trim().length === 4) joinRoom(roomCode.trim());
     else createRoom();
   };
 
-  const accountCorner = (
-    <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-lg">
-      {user ? (
-        <>
-          <span
-            className="max-w-[160px] truncate text-sm text-[var(--text)]"
-            title={user.email ?? undefined}
-          >
-            {user.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="rounded-lg bg-[var(--surface2)] px-2 py-1 text-xs font-medium text-[var(--text)] hover:bg-[var(--border)]"
-          >
-            Sign out
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAuthModalOpen(true)}
-          className="rounded-lg bg-[var(--blue)] px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
-        >
-          Login
-        </button>
-      )}
-    </div>
-  );
-
-  // Game mode selector - when no room and no invite link
-  if (showGameSelect && !gameRoom && !roomIdFromUrl) {
-    return (
+  // Root: form — name + join/create room (invite link or direct)
+  return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
         />
-        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-          <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
-            Imposter Game
-          </h1>
-          <p className="mb-8 text-center text-sm text-[var(--muted)]">
-            Play with Dota 2 Heroes or Clash Royale Cards
-          </p>
-          <div className="grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-            <button
-              onClick={() => setShowGameSelect(false)}
-              className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-            >
-              <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-                🎭
-              </span>
-              <span className="font-display text-xl font-bold text-[var(--text)]">
-                Imposter
-              </span>
-              <span className="mt-1 text-sm text-[var(--muted)]">
-                Multiplayer · Find the imposter
-              </span>
-            </button>
-            <Link
-              href="/headsup"
-              className="animate-game-select-in-delay-1 group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
-            >
-              <span className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
-                👆
-              </span>
-              <span className="font-display text-xl font-bold text-[var(--text)]">
-                Heads Up
-              </span>
-              <span className="mt-1 text-sm text-[var(--muted)]">
-                Single device · Ask questions
-              </span>
-            </Link>
-          </div>
-        </div>
-      </>
-    );
-  }
+        <div className="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6">
+          {/* Single unified card — no floating cards */}
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] sm:max-w-2xl">
+            {/* Header */}
+            <div className="border-b border-[var(--border)] bg-[var(--surface2)] px-4 py-3 sm:px-6 sm:py-4">
+              <h1 className="gradient-text font-display text-2xl font-bold tracking-wide sm:text-3xl">
+                {APP.name}
+              </h1>
+              <p className="mb-0 mt-1 text-xs text-[var(--muted)] sm:text-sm">
+                Play with Dota 2 Heroes or Clash Royale Cards ·{" "}
+                <Link
+                  href="/play"
+                  className="text-[var(--blue)] hover:underline"
+                >
+                  Online lobbies
+                </Link>
+                {" · "}
+                <Link
+                  href="/headsup"
+                  className="text-[var(--blue)] hover:underline"
+                >
+                  Heads Up
+                </Link>
+              </p>
+            </div>
 
-  if (!gameRoom) {
-    return (
-      <>
-        {accountCorner}
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-        <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-            {!roomIdFromUrl && (
-              <button
-                onClick={() => setShowGameSelect(true)}
-                className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
-              >
-                ← Back
-              </button>
-            )}
-            <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
-              Imposter Game
-            </h1>
-            <p className="mb-6 text-center text-sm text-[var(--muted)]">
-              Play with Dota 2 Heroes or Clash Royale Cards
-            </p>
+            {/* Content: form + login in one card */}
+            <div className="flex flex-col sm:flex-row">
+              {/* Join form — left */}
+              <div className="flex-1 border-b border-[var(--border)] p-4 sm:border-b-0 sm:border-r sm:border-[var(--border)] sm:p-6">
+                {error && (
+                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
+                    <p className="text-sm font-medium">{error}</p>
+                  </div>
+                )}
 
-            {error && (
-              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-[var(--text)]">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !isLoading) handleSubmit();
+                      }}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                  Your Name
-                </label>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isLoading) handleSubmit();
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
+                  {roomIdFromUrl ? (
+                    <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
+                      <p className="mb-1 text-sm font-medium text-[var(--green)]">
+                        Invite link detected
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        Room: {roomIdFromUrl.toUpperCase()}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[var(--text)]">
+                        Room Code{" "}
+                        <span className="text-[var(--muted)]">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={roomCode}
+                        onChange={(e) =>
+                          setRoomCode(
+                            e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Z0-9]/g, "")
+                              .slice(0, 4),
+                          )
+                        }
+                        placeholder="Enter 4-digit code"
+                        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-xl font-bold tracking-[0.4em] text-[var(--text)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)] sm:text-2xl"
+                        maxLength={4}
+                        disabled={isLoading}
+                      />
+                      <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
+                        Leave empty to create a new room
+                      </p>
+                    </div>
+                  )}
 
-              {roomIdFromUrl ? (
-                <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
-                  <p className="mb-2 text-sm font-medium text-[var(--green)]">
-                    Invite link detected
-                  </p>
-                  <p className="text-xs text-[var(--muted)]">
-                    Room: {roomIdFromUrl.toUpperCase()}
-                  </p>
+                  {roomIdFromUrl ? (
+                    <button
+                      onClick={() => joinRoom(roomIdFromUrl)}
+                      disabled={isLoading || !playerName.trim()}
+                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Joining...
+                        </>
+                      ) : (
+                        "Join Room"
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        roomCode.trim().length === 4
+                          ? joinRoom(roomCode.trim())
+                          : createRoom()
+                      }
+                      disabled={
+                        isLoading ||
+                        !playerName.trim() ||
+                        (roomCode.trim().length > 0 &&
+                          roomCode.trim().length < 4)
+                      }
+                      className={`flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
+                        roomCode.trim().length > 0
+                          ? "bg-[var(--green)] hover:brightness-110"
+                          : "bg-[var(--blue)] hover:brightness-110"
+                      }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          {roomCode.trim().length === 4
+                            ? "Joining..."
+                            : "Creating..."}
+                        </>
+                      ) : roomCode.trim().length > 0 ? (
+                        "Join Room"
+                      ) : (
+                        "Create Room"
+                      )}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                    Room Code{" "}
-                    <span className="text-[var(--muted)]">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={roomCode}
-                    onChange={(e) =>
-                      setRoomCode(
-                        e.target.value
-                          .toUpperCase()
-                          .replace(/[^A-Z0-9]/g, "")
-                          .slice(0, 6),
-                      )
-                    }
-                    placeholder="Enter 6-digit code"
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                    maxLength={6}
-                    disabled={isLoading}
-                  />
-                  <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
-                    Leave empty to create a new room
-                  </p>
-                </div>
-              )}
+              </div>
 
-              {roomIdFromUrl ? (
-                <button
-                  onClick={() => joinRoom(roomIdFromUrl)}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Join Room"
-                  )}
-                </button>
-              ) : roomCode.trim().length === 6 ? (
-                <button
-                  onClick={() => joinRoom(roomCode.trim())}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Join Room"
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={createRoom}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Room"
-                  )}
-                </button>
-              )}
+              {/* Login — right */}
+              <div className="flex-shrink-0 border-t border-[var(--border)] p-4 sm:border-t-0 sm:border-l-0 sm:w-56 sm:p-6">
+                {user ? (
+                  <div className="space-y-3">
+                    <p className="font-display text-sm font-semibold text-[var(--text)]">
+                      Signed in
+                    </p>
+                    <p
+                      className="truncate text-xs text-[var(--muted)]"
+                      title={user.email ?? undefined}
+                    >
+                      {user.email}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="w-full min-h-[44px] rounded-xl bg-[var(--surface2)] px-3 py-2.5 text-sm font-medium text-[var(--text)] hover:bg-[var(--border)]"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="font-display text-sm font-semibold text-[var(--text)]">
+                      Have an account?
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Log in with email to sync across devices.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setAuthModalOpen(true)}
+                      className="w-full min-h-[44px] rounded-xl bg-[var(--blue)] px-4 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                    >
+                      Log in with email
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </>
     );
-  }
-
-  if (
-    gameRoom.gameState === "headsup_countdown" ||
-    gameRoom.gameState === "headsup_playing"
-  ) {
-    return (
-      <>
-        {accountCorner}
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-        <HeadsUpMultiScreen
-          gameRoom={gameRoom}
-          playerId={playerId}
-          isHost={gameRoom.players[0]?.id === playerId}
-          onLeaveRoom={() => {
-            showToast("Left the room");
-            leaveRoom(gameRoom.id);
-          }}
-          onBackToLobby={resetGame}
-        />
-      </>
-    );
-  }
-
-  if (
-    gameRoom.gameFormat === "headsup_online" &&
-    gameRoom.gameState === "playing"
-  ) {
-    return (
-      <>
-        {accountCorner}
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-        <HeadsUpOnline
-          gameRoom={gameRoom}
-          localPlayerId={playerId}
-          isHost={gameRoom.players[0]?.id === playerId}
-          onRotateCard={rotateCard}
-          onLeaveRoom={() => {
-            showToast("Left the room");
-            leaveRoom(gameRoom.id);
-          }}
-          onBackToLobby={resetGame}
-        />
-      </>
-    );
-  }
-
-  if (gameRoom.gameState === "lobby") {
-    return (
-      <>
-        {accountCorner}
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-        <GameLobby
-          gameRoom={gameRoom}
-          playerId={playerId}
-          playerName={playerName}
-          onAddPlayer={addPlayer}
-          onStartGame={startGame}
-          onStartHeadsUp={startHeadsUp}
-          onStartHeadsUpOnline={startHeadsUpOnline}
-          isStarting={isLoading}
-          isAddingPlayer={isAddingPlayer}
-          onLeaveRoom={() => {
-            showToast("Left the room");
-            leaveRoom(gameRoom.id);
-          }}
-          onToggleHints={toggleHints}
-          onKickPlayer={kickPlayer}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      {accountCorner}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-      />
-      <GameScreen
-        gameRoom={gameRoom}
-        playerId={playerId}
-        playerName={playerName}
-        onSubmitClue={submitClue}
-        onVote={vote}
-        onResetGame={resetGame}
-        onSkipPhase={skipPhase}
-        onNextRound={nextRound}
-        onLeaveRoom={() => leaveRoom(gameRoom.id)}
-      />
-    </>
-  );
 }

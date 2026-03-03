@@ -12,11 +12,11 @@ import {
   validateRoomId,
 } from "../../lib/validation";
 
-// Generate a short, user-friendly room code (6 characters, uppercase)
+// Generate a short, user-friendly room code (4 characters, uppercase)
 function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars like 0, O, I, 1
   let code = "";
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
