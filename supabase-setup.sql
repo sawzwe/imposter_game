@@ -10,7 +10,23 @@ CREATE TABLE IF NOT EXISTS game_rooms (
 CREATE INDEX IF NOT EXISTS idx_game_rooms_updated_at ON game_rooms(updated_at);
 
 -- Enable Realtime for instant game state updates (no polling)
+-- Run this in Supabase Dashboard: Database → Publications → supabase_realtime → add game_rooms
+-- Or run this SQL (may error if already added - that's fine):
 ALTER PUBLICATION supabase_realtime ADD TABLE game_rooms;
+
+-- RLS: Required for Realtime. Realtime uses your anon key and respects RLS.
+-- Without a SELECT policy, clients won't receive change events.
+ALTER TABLE game_rooms ENABLE ROW LEVEL SECURITY;
+
+-- Allow anonymous read access (required for Realtime to broadcast changes to clients)
+-- If policy exists: DROP POLICY "Allow anonymous read for Realtime" ON game_rooms; first
+CREATE POLICY "Allow anonymous read for Realtime"
+  ON game_rooms FOR SELECT
+  TO anon
+  USING (true);
+
+-- Full payload for UPDATE (required for Realtime to send the full new row)
+ALTER TABLE game_rooms REPLICA IDENTITY FULL;
 
 -- Optional: Add a cleanup function to delete old rooms (older than 24 hours)
 CREATE OR REPLACE FUNCTION cleanup_old_rooms()

@@ -35,8 +35,10 @@ export function useRoomRealtime(
           table: "game_rooms",
           filter: `id=eq.${roomId}`,
         },
-        (payload) => {
-          const newRow = payload.new as { id: string; data: GameRoom; updated_at: string };
+        (payload: {
+          new?: { id: string; data: GameRoom; updated_at: string };
+        }) => {
+          const newRow = payload.new;
           if (newRow?.data) {
             onUpdateRef.current(newRow.data as GameRoom);
           }
@@ -54,7 +56,11 @@ export function useRoomRealtime(
           onRoomDeletedRef.current?.();
         },
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Realtime]", roomId, status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
