@@ -130,15 +130,23 @@ export default function PlayClient() {
     if (storedName) setPlayerName(storedName);
   }, []);
 
-  // Supabase Realtime — instant updates when room changes (no polling)
+  // Supabase Realtime — instant updates for all game states (lobby, impo, guess who, etc.)
+  const roomIdForRealtime =
+    gameRoom?.id ??
+    (roomCodeFromUrl
+      ? roomCodeFromUrl.startsWith("room_")
+        ? roomCodeFromUrl
+        : `room_${roomCodeFromUrl.toUpperCase()}`
+      : null);
   const hasRealtimeRef = useRef(false);
   hasRealtimeRef.current = useRoomRealtime(
-    gameRoom?.id ?? null,
+    roomIdForRealtime,
     (room) => {
       const currentPlayerId = localStorage.getItem("playerId");
       const playerStillInRoom = room.players.some((p) => p.id === currentPlayerId);
       if (playerStillInRoom) {
         setGameRoom(room);
+        setIsLoading(false); // In case we got room from Realtime before fetch
       } else {
         router.push(`/?room=${(room.id ?? "").replace("room_", "")}`);
       }
