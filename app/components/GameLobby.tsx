@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Check } from "phosphor-react";
 import { DotaLogo, ClashRoyaleEmote, MobileLegendsLogo } from "./assets";
 import { useToast } from "./ToastContext";
+import { APP } from "../lib/constants";
 import { GameRoom, GameType, GameFormat } from "../types";
 
 interface GameLobbyProps {
@@ -239,7 +240,7 @@ export default function GameLobby({
                 >
                   <div className="mb-1 text-2xl">🎭</div>
                   <div className="font-display font-bold text-[var(--text)]">
-                    impo
+                    {APP.gameName}
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Find the imposter
@@ -285,7 +286,7 @@ export default function GameLobby({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-semibold text-[var(--text)]">
-                      impo Hints
+                      {APP.gameName} Hints
                     </h3>
                     <p className="text-sm text-[var(--muted)]">
                       {gameRoom.hintsEnabled !== false
@@ -404,7 +405,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start impo · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start {APP.gameName} · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             )}

@@ -10,6 +10,7 @@ import GameScreen from "../components/GameScreen";
 import HeadsUpMultiScreen from "../components/HeadsUpMultiScreen";
 import HeadsUpOnline from "../components/HeadsUpOnline";
 import { useToast } from "../components/ToastContext";
+import { APP } from "../lib/constants";
 import { GameRoom, GameType } from "../types";
 
 export default function PlayClient() {
@@ -384,7 +385,7 @@ export default function PlayClient() {
                 🎭
               </span>
               <span className="font-display text-xl font-bold text-[var(--text)]">
-                impo
+                {APP.gameName}
               </span>
               <span className="mt-1 text-sm text-[var(--muted)]">
                 Find the imposter

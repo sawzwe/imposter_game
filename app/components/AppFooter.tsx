@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Info } from "lucide-react";
 import packageJson from "../../package.json";
+import { APP, LINKS } from "../lib/constants";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 export default function AppFooter() {
@@ -74,7 +75,7 @@ export default function AppFooter() {
                       About
                     </a>
                     <a
-                      href="mailto:sawzwe.matthew.md@gmail.com"
+                      href={`mailto:${LINKS.contactEmail}`}
                       onClick={() => setIsMenuOpen(false)}
                       className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[var(--muted)] transition-colors hover:bg-[var(--border)]/30 hover:text-[var(--text)]"
                       role="menuitem"
@@ -88,19 +89,19 @@ export default function AppFooter() {
           </div>
         </div>
         <div className="pointer-events-auto hidden min-w-0 shrink items-center justify-end gap-x-2 truncate text-xs text-[var(--muted)] md:flex">
-          <span>© {year} impo</span>
+          <span>© {year} {APP.name}</span>
           <span className="text-[var(--border)]">·</span>
           <span className="font-medium tabular-nums">
             v{packageJson.version}
           </span>
           <span className="text-[var(--border)]">·</span>
           <a
-            href="https://github.com/sawzwe"
+            href={LINKS.github}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-[var(--blue)] hover:underline"
           >
-            @sawzwe
+            {LINKS.githubHandle}
           </a>
         </div>
       </footer>
