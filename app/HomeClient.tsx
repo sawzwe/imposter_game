@@ -21,7 +21,7 @@ export default function HomeClient() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const [gameRoom, setGameRoom] = useState<GameRoom | null>(null);
-  const [showGameSelect, setShowGameSelect] = useState(true);
+  const [showGameSelect, setShowGameSelect] = useState(false);
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
@@ -722,53 +722,22 @@ export default function HomeClient() {
     else createRoom();
   };
 
-  const accountCorner = (
-    <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 shadow-lg">
-      {user ? (
-        <>
-          <span
-            className="max-w-[160px] truncate text-sm text-[var(--text)]"
-            title={user.email ?? undefined}
-          >
-            {user.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="rounded-lg bg-[var(--surface2)] px-2 py-1 text-xs font-medium text-[var(--text)] hover:bg-[var(--border)]"
-          >
-            Sign out
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAuthModalOpen(true)}
-          className="rounded-lg bg-[var(--blue)] px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
-        >
-          Login
-        </button>
-      )}
-    </div>
-  );
-
   // Game mode selector - when no room and no invite link
   if (showGameSelect && !gameRoom && !roomIdFromUrl) {
     return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
         />
-        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
-          <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
+        <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-4 sm:p-6">
+          <h1 className="gradient-text mb-2 text-center font-display text-2xl font-bold tracking-wide sm:text-3xl">
             Imposter Game
           </h1>
-          <p className="mb-8 text-center text-sm text-[var(--muted)]">
+          <p className="mb-6 text-center text-xs text-[var(--muted)] sm:mb-8 sm:text-sm">
             Play with Dota 2 Heroes or Clash Royale Cards
           </p>
-          <div className="grid w-full max-w-md grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+          <div className="grid w-full max-w-md grid-cols-1 gap-4 sm:max-w-lg md:grid-cols-2 md:gap-6">
             <button
               onClick={() => setShowGameSelect(false)}
               className="animate-game-select-in group flex flex-col items-center rounded-2xl border-2 border-[var(--border)] bg-[var(--surface2)] p-8 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-[var(--blue)] hover:shadow-[0_0_32px_var(--blue-glow)] active:scale-[0.98]"
@@ -806,135 +775,184 @@ export default function HomeClient() {
   if (!gameRoom) {
     return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
         />
-        <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-xl">
-            {!roomIdFromUrl && (
-              <button
-                onClick={() => setShowGameSelect(true)}
-                className="mb-4 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--surface2)] hover:text-[var(--text)]"
-              >
-                ← Back
-              </button>
-            )}
-            <h1 className="gradient-text mb-2 text-center font-display text-3xl font-bold tracking-wide">
-              Imposter Game
-            </h1>
-            <p className="mb-6 text-center text-sm text-[var(--muted)]">
-              Play with Dota 2 Heroes or Clash Royale Cards
-            </p>
-
-            {error && (
-              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                  Your Name
-                </label>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isLoading) handleSubmit();
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-
-              {roomIdFromUrl ? (
-                <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
-                  <p className="mb-2 text-sm font-medium text-[var(--green)]">
-                    Invite link detected
-                  </p>
-                  <p className="text-xs text-[var(--muted)]">
-                    Room: {roomIdFromUrl.toUpperCase()}
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-[var(--text)]">
-                    Room Code{" "}
-                    <span className="text-[var(--muted)]">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={roomCode}
-                    onChange={(e) =>
-                      setRoomCode(
-                        e.target.value
-                          .toUpperCase()
-                          .replace(/[^A-Z0-9]/g, "")
-                          .slice(0, 6),
-                      )
-                    }
-                    placeholder="Enter 6-digit code"
-                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-2xl font-bold tracking-[0.3em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
-                    maxLength={6}
-                    disabled={isLoading}
-                  />
-                  <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
-                    Leave empty to create a new room
-                  </p>
-                </div>
-              )}
-
-              {roomIdFromUrl ? (
+        <div className="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6">
+          {/* Single unified card — no floating cards */}
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] sm:max-w-2xl">
+            {/* Header */}
+            <div className="border-b border-[var(--border)] bg-[var(--surface2)] px-4 py-3 sm:px-6 sm:py-4">
+              {!roomIdFromUrl && (
                 <button
-                  onClick={() => joinRoom(roomIdFromUrl)}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                  onClick={() => setShowGameSelect(true)}
+                  className="mb-2 rounded-lg px-2 py-1 text-sm font-semibold text-[var(--muted)] transition-colors hover:bg-[var(--border)] hover:text-[var(--text)]"
                 >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Join Room"
-                  )}
-                </button>
-              ) : roomCode.trim().length === 6 ? (
-                <button
-                  onClick={() => joinRoom(roomCode.trim())}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Joining...
-                    </>
-                  ) : (
-                    "Join Room"
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={createRoom}
-                  disabled={isLoading || !playerName.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Room"
-                  )}
+                  ← Back
                 </button>
               )}
+              <h1 className="gradient-text font-display text-2xl font-bold tracking-wide sm:text-3xl">
+                Imposter Game
+              </h1>
+              <p className="mb-0 mt-1 text-xs text-[var(--muted)] sm:text-sm">
+                Play with Dota 2 Heroes or Clash Royale Cards
+              </p>
+            </div>
+
+            {/* Content: form + login in one card */}
+            <div className="flex flex-col sm:flex-row">
+              {/* Join form — left */}
+              <div className="flex-1 border-b border-[var(--border)] p-4 sm:border-b-0 sm:border-r sm:border-[var(--border)] sm:p-6">
+                {error && (
+                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-red-400">
+                    <p className="text-sm font-medium">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-[var(--text)]">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-[var(--text)] placeholder:text-[var(--muted)] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !isLoading) handleSubmit();
+                      }}
+                      disabled={isLoading}
+                    />
+                  </div>
+
+                  {roomIdFromUrl ? (
+                    <div className="rounded-xl border border-[var(--green)]/40 bg-green-500/10 p-3">
+                      <p className="mb-1 text-sm font-medium text-[var(--green)]">
+                        Invite link detected
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        Room: {roomIdFromUrl.toUpperCase()}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-[var(--text)]">
+                        Room Code{" "}
+                        <span className="text-[var(--muted)]">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={roomCode}
+                        onChange={(e) =>
+                          setRoomCode(
+                            e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Z0-9]/g, "")
+                              .slice(0, 6),
+                          )
+                        }
+                        placeholder="Enter 6-digit code"
+                        className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)] px-4 py-3 text-center font-display text-xl font-bold tracking-[0.4em] text-[#5b8fff] focus:border-[var(--blue)] focus:outline-none focus:ring-2 focus:ring-[var(--blue-glow)] sm:text-2xl"
+                        maxLength={6}
+                        disabled={isLoading}
+                      />
+                      <p className="mt-1.5 text-center text-xs text-[var(--muted)]">
+                        Leave empty to create a new room
+                      </p>
+                    </div>
+                  )}
+
+                  {roomIdFromUrl ? (
+                    <button
+                      onClick={() => joinRoom(roomIdFromUrl)}
+                      disabled={isLoading || !playerName.trim()}
+                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Joining...
+                        </>
+                      ) : (
+                        "Join Room"
+                      )}
+                    </button>
+                  ) : roomCode.trim().length === 6 ? (
+                    <button
+                      onClick={() => joinRoom(roomCode.trim())}
+                      disabled={isLoading || !playerName.trim()}
+                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Joining...
+                        </>
+                      ) : (
+                        "Join Room"
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={createRoom}
+                      disabled={isLoading || !playerName.trim()}
+                      className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[var(--blue)] px-4 py-3 font-display text-lg font-bold tracking-wide text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isLoading ? (
+                        <>
+                          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Room"
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Login — right */}
+              <div className="flex-shrink-0 border-t border-[var(--border)] p-4 sm:border-t-0 sm:border-l-0 sm:w-56 sm:p-6">
+                {user ? (
+                  <div className="space-y-3">
+                    <p className="font-display text-sm font-semibold text-[var(--text)]">
+                      Signed in
+                    </p>
+                    <p
+                      className="truncate text-xs text-[var(--muted)]"
+                      title={user.email ?? undefined}
+                    >
+                      {user.email}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="w-full min-h-[44px] rounded-xl bg-[var(--surface2)] px-3 py-2.5 text-sm font-medium text-[var(--text)] hover:bg-[var(--border)]"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="font-display text-sm font-semibold text-[var(--text)]">
+                      Have an account?
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Log in with email to sync across devices.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setAuthModalOpen(true)}
+                      className="w-full min-h-[44px] rounded-xl bg-[var(--blue)] px-4 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                    >
+                      Log in with email
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -948,7 +966,6 @@ export default function HomeClient() {
   ) {
     return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
@@ -973,7 +990,6 @@ export default function HomeClient() {
   ) {
     return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
@@ -996,7 +1012,6 @@ export default function HomeClient() {
   if (gameRoom.gameState === "lobby") {
     return (
       <>
-        {accountCorner}
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
@@ -1024,7 +1039,6 @@ export default function HomeClient() {
 
   return (
     <>
-      {accountCorner}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
