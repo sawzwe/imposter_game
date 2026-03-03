@@ -71,6 +71,7 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", nameToUse);
+      localStorage.setItem("playerId", playerId);
       localStorage.setItem("roomId", data.room.id);
       setError(null);
       router.push(`/play?room=${getRoomCodeFromId(data.room.id)}`);
@@ -99,7 +100,7 @@ export default function HomeClient() {
         : `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
     const id = toValidPlayerId(raw);
     setPlayerId(id);
-    if (typeof window !== "undefined" && !user) {
+    if (typeof window !== "undefined") {
       localStorage.setItem("playerId", id);
     }
   }, [user?.id]);
@@ -154,8 +155,9 @@ export default function HomeClient() {
       }
 
       localStorage.setItem("playerName", playerName.trim());
-      setError(null);
+      localStorage.setItem("playerId", playerId);
       localStorage.setItem("roomId", data.room.id);
+      setError(null);
       router.push(`/play?room=${getRoomCodeFromId(data.room.id)}`);
     } catch (error: any) {
       console.error("Error creating room:", error);

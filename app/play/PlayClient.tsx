@@ -118,7 +118,7 @@ export default function PlayClient() {
         : `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`);
     const id = toValidPlayerId(raw);
     setPlayerId(id);
-    if (typeof window !== "undefined" && !user) {
+    if (typeof window !== "undefined") {
       localStorage.setItem("playerId", id);
     }
   }, [user?.id]);
