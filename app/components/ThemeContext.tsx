@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 
 export type DesignTheme = "default" | "cyberpunk" | "solarpunk";
 
-const THEME_KEY = "imposter-theme";
+const THEME_KEY = "impo-theme";
 const VALID_THEMES: DesignTheme[] = ["default", "cyberpunk", "solarpunk"];
 const TRANSITION_MS = 400; // total: fade out 200ms, apply theme, fade in 200ms
 

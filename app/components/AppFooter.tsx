@@ -88,7 +88,7 @@ export default function AppFooter() {
           </div>
         </div>
         <div className="pointer-events-auto hidden min-w-0 shrink items-center justify-end gap-x-2 truncate text-xs text-[var(--muted)] md:flex">
-          <span>© {year} Imposter</span>
+          <span>© {year} impo</span>
           <span className="text-[var(--border)]">·</span>
           <span className="font-medium tabular-nums">
             v{packageJson.version}

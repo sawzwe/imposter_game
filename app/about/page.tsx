@@ -5,11 +5,11 @@ export default function AboutPage() {
     <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8">
         <h1 className="gradient-text mb-4 text-center font-display text-2xl font-bold">
-          About Imposter
+          About impo
         </h1>
         <p className="mb-6 text-center text-sm text-[var(--muted)]">
           A multiplayer party game with Dota 2 heroes and Clash Royale cards.
-          Play Imposter, Heads Up, or Online Heads Up with friends.
+          Play impo, Heads Up, or Online Heads Up with friends.
         </p>
         <div className="space-y-3 text-sm text-[var(--text)]">
           <p>

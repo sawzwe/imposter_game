@@ -177,7 +177,7 @@ export default function HomeClient() {
             {/* Header */}
             <div className="border-b border-[var(--border)] bg-[var(--surface2)] px-4 py-3 sm:px-6 sm:py-4">
               <h1 className="gradient-text font-display text-2xl font-bold tracking-wide sm:text-3xl">
-                Imposter Game
+                impo
               </h1>
               <p className="mb-0 mt-1 text-xs text-[var(--muted)] sm:text-sm">
                 Play with Dota 2 Heroes or Clash Royale Cards ·{" "}

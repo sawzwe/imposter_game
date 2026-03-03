@@ -239,7 +239,7 @@ export default function GameLobby({
                 >
                   <div className="mb-1 text-2xl">🎭</div>
                   <div className="font-display font-bold text-[var(--text)]">
-                    Imposter
+                    impo
                   </div>
                   <div className="text-xs text-[var(--muted)]">
                     Find the imposter
@@ -285,7 +285,7 @@ export default function GameLobby({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="font-semibold text-[var(--text)]">
-                      Imposter Hints
+                      impo Hints
                     </h3>
                     <p className="text-sm text-[var(--muted)]">
                       {gameRoom.hintsEnabled !== false
@@ -404,7 +404,7 @@ export default function GameLobby({
                     Starting...
                   </>
                 ) : (
-                  <>Start Imposter · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
+                  <>Start impo · {selectedGame === "dota2" ? "Dota 2" : selectedGame === "mobilelegends" ? "Mobile Legends" : "Clash Royale"} ({gameRoom.players.length} players)</>
                 )}
               </button>
             )}

@@ -7,9 +7,9 @@ import AppFooter from "./components/AppFooter";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Imposter Game",
+  title: "impo",
   description:
-    "A multiplayer word-based imposter game with Dota 2 heroes and Clash Royale cards",
+    "Multiplayer party games — impo, Heads Up, and more. Play with Dota 2 heroes and Clash Royale cards.",
 };
 
 export const viewport = {
@@ -31,7 +31,7 @@ export default function RootLayout({
           id="theme-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem("imposter-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default");var h=location.pathname==="/"?"3rem":"0px";document.documentElement.style.setProperty("--footer-height",h)})();`,
+            __html: `(function(){var t=localStorage.getItem("impo-theme");document.documentElement.setAttribute("data-theme",["default","cyberpunk","solarpunk"].includes(t)?t:"default");var h=location.pathname==="/"?"3rem":"0px";document.documentElement.style.setProperty("--footer-height",h)})();`,
           }}
         />
         <ThemeProvider>

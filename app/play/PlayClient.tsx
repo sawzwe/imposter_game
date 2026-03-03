@@ -384,7 +384,7 @@ export default function PlayClient() {
                 🎭
               </span>
               <span className="font-display text-xl font-bold text-[var(--text)]">
-                Imposter
+                impo
               </span>
               <span className="mt-1 text-sm text-[var(--muted)]">
                 Find the imposter
